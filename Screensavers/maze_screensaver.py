@@ -1,5 +1,6 @@
 """
-Maze Screensaver
+Maze Screensaver for the Adafruit Fruit Jam
+and Fruit Jam OS
 Dan Cogliano, https://DanTheGeek.com
 """
 
@@ -15,24 +16,94 @@ import adafruit_imageload
 
 SCREENWIDTH=320
 SCREENHEIGHT=240
-class star:
+
+BOTTOM = 0x01
+RIGHT = 0x02
+
+class maze:
     width = SCREENWIDTH
     height = SCREENHEIGHT
     counter = 0
+    maze = []
+    mazepath = []
 
     def __init__(self, bmp):
         self.bmp = bmp
         self.reset()
 
-    def reset(self):
+    def reset(self,cs,lw):
+        self.cellsize = cs
+        self.lwidth = lw
+        self.sizex = self.width // self.cellsize
+        self.sizey = self.height // cellsize
+        for i in range(self.sizex * self.sizey):
+            if i == 0:
+                item = 0
+            elif i < self.sizex:
+                item = BOTTOM
+            elif i % self.sizex == 0:
+            	item = RIGHT
+            else:
+            	item = BOTTOM | RIGHT
+            maze.append(item)
+            mazepath.append(i)
 
-class StarFieldScreenSaver(Group):
+    def getX(item,width):
+        return item % width
+
+    def getY(item,width):
+        return item // width
+
+    """
+    cell_join() joins two cells together, effectively breaking down a wall within
+    the maze.
+    """
+    def cell_join(int cell1, int cell2):
+  
+        val = mazepath[cell2];
+        # set mazepath value
+        for incr = range(self.sizex*self.sizey - 1, -1, -1):
+            if mazepath[incr] == val:
+            mazepath[incr] = mazepath[cell1]
+        # set graphics
+        if cell1 + 1 == cell2: # open right wall
+            maze[cell1] = maze[cell1]&~RIGHT
+        else: # open bottom wall
+            maze[cell1] = maze[cell1]&~BOTTOM
+
+    """
+    connect() attempts to connect two squares together, returning
+    FALSE if the attempt failed
+    """
+    def connect(int cell):
+        cellcheck = [2]
+        int incr;
+        int cellcheck[2]; /* adjacent cell attempts */
+        # check if cell is a border, if so, return false 
+        if((cell < self.sizex) or ((cell%self.sizex == 0)): /* top or left line */
+            return False
+        # determine order of cell attempts
+        cellcheck[0]=random.randomint(2);
+        cellcheck[1]=(cellcheck[0]+1)%2;
+        /* check cells to see if can be connected */
+        for incr in range(2):
+            if self.getX(cell,self.sizex)==(self.sizex-1))&&(cellcheck[incr]==0)):
+                continue # do not attempt to open right edge of maze
+            if((self.getY(cell,self.sizex)==(self.sizey-1))&&(cellcheck[incr]==1)):
+                continue; # do not attempt to open bottom edge of maze
+            if(*(mazepath+cell)!=*(mazepath+cell+1+cellcheck[incr]*(self.sizex-1)))
+            if mazepath[cell] != mazepath[cell+1+cellcheck[incr]]
+            {
+                cell_join(cell,cell+1+cellcheck[incr]*(self.sizex-1))
+                return True
+            }
+    return False
+
+class MazeScreenSaver(Group):
 
     display_size = (SCREENWIDTH, SCREENHEIGHT)
     last_move_time = 0
     move_cooldown = 0.05  # seconds
-    colors = [0x000000, 0x111111, 0x222222, 0x333333, 0x444444, 0x555555, 0x666666, 0x777777,
-        0x888888, 0x999999, 0xaaaaaa, 0xbbbbbb, 0xcccccc, 0xdddddd, 0xeeeeee, 0xffffff]
 
 
     def __init__(self):
