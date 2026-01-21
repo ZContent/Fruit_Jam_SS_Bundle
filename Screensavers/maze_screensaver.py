@@ -11,6 +11,7 @@ import math
 import random
 
 from displayio import Group, OnDiskBitmap, TileGrid, Bitmap, Palette
+import bitmaptools
 
 import adafruit_imageload
 
@@ -19,6 +20,12 @@ SCREENHEIGHT=240
 
 BOTTOM = 0x01
 RIGHT = 0x02
+
+# palette colors
+BLACK = 0
+GRAY = 1
+WHITE = 2
+RED = 3
 
 class maze:
     width = SCREENWIDTH
@@ -128,12 +135,14 @@ class MazeScreenSaver(Group):
     last_move_time = 0
     move_cooldown = 0.05  # seconds
     counter = 0
+    lwidth = 3
+    cellsize = 10
 
     def __init__(self):
         print("__init__")
         super().__init__()
         self.init_graphics()
-        #self.maze = maze()
+        self.maze = maze()
 
     def init_graphics(self):
         print("init_graphics()")
@@ -164,3 +173,53 @@ class MazeScreenSaver(Group):
             return True
 
         return False
+
+
+    """
+    display_maze() prints the maze on the graphics device
+    """
+    def display_maze(self,maze):
+        xcenter = 0 - maze.cellsize//2
+        ycenter = 0 - maze.cellsize//2
+        print(f"maze centering adjustment: {xcenter}, {ycenter}")
+        self.bg_bmp.fill(WHITE)
+        
+        // draw horizontal lines
+        for incry in range(maze.sizey):
+            xstart = -1
+            xend = -1
+            for incrx in range(maze.sizex):
+                if maze[incry*sizex+incrx]&BOTTOM != 0 and xstart == -1:
+                    xstart = incrx
+                elif maze[incry*sizex+incrx]&BOTTOM == 0 and xtart != -1:
+                    xend = incrx
+                    bitmaptools.fill_region(self.bg_bmp,xcenter + xstart*self.cellsize,ycenter + (incry+1)*self.cellsize,(xend - xstart)*self.cellsize+self.lwidth,self.lwidth,BLACK)
+                    xstart = -1
+                    xend = -1
+            if xstart != -1:
+              # finish line
+              xend = sizex
+              bitmaptools.fill_region(self.bg_bmp,xcenter + xstart*self.cellsize,ycenter + (incry+1)*self.cellsize,(xend - xstart)*self.cellsize+self.lwidth,self.lwidth,BLACK)
+              xstart = -1
+              xend = -1
+        
+        # draw vertical lines
+
+        for incrx in range(maze.sizex):
+            ystart = -1
+            yend = -1
+            for(int incry = 0; incry < sizey; incry++)
+            for incry in range(maze.sizey):
+                if maze[incry*sizex+incrx]&RIGHT !- 0 and incry > 0 and ystart == -1:
+                    ystart = incry
+                elif maze[incry*sizex+incrx]&RIGHT == 0 and incry > 0 and ystart != -1:
+                    yend = incry
+                    bitmaptools.fill_region(self.bg_bmp, xcenter + (incrx+1)*self.cellsize,ycenter + ystart*self.cellsize,self.lwidth,(yend - ystart)*self.cellsize+self.lwidth,BLACK);
+                    ystart = -1
+                    yend = -1
+            
+            if ystart != -1:
+                # finish line
+                yend = sizey
+                bitmaptools.fill_region(self.bg_bmp, xcenter + (incrx+1)*self.cellsize,ycenter + ystart*self.cellsize,lwidth,(yend - ystart)*self.cellsize+self.lwidth,BLACK);
+
