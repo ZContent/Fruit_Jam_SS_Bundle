@@ -58,59 +58,85 @@ class maze:
     cell_join() joins two cells together, effectively breaking down a wall within
     the maze.
     """
-    def cell_join(int cell1, int cell2):
-  
+    def cell_join(self, cell1, cell2):
+
         val = mazepath[cell2];
         # set mazepath value
-        for incr = range(self.sizex*self.sizey - 1, -1, -1):
-            if mazepath[incr] == val:
-            mazepath[incr] = mazepath[cell1]
+        for incr in range(self.sizex*self.sizey - 1, -1, -1):
+            if self.mazepath[incr] == val:
+                self.mazepath[incr] = self.mazepath[cell1]
         # set graphics
         if cell1 + 1 == cell2: # open right wall
-            maze[cell1] = maze[cell1]&~RIGHT
+            self.maze[cell1] = self.maze[cell1]&~RIGHT
         else: # open bottom wall
-            maze[cell1] = maze[cell1]&~BOTTOM
+            self.maze[cell1] = self.maze[cell1]&~BOTTOM
 
     """
     connect() attempts to connect two squares together, returning
     FALSE if the attempt failed
     """
-    def connect(int cell):
+    def connect(self, cell):
         cellcheck = [2]
-        int incr;
-        int cellcheck[2]; /* adjacent cell attempts */
-        # check if cell is a border, if so, return false 
-        if((cell < self.sizex) or ((cell%self.sizex == 0)): /* top or left line */
+
+        # check if cell is a border, if so, return false
+        if (cell < self.sizex) or (cell%self.sizex == 0): # top or left line
             return False
         # determine order of cell attempts
         cellcheck[0]=random.randomint(2);
         cellcheck[1]=(cellcheck[0]+1)%2;
-        /* check cells to see if can be connected */
+        # check cells to see if can be connected
         for incr in range(2):
-            if self.getX(cell,self.sizex)==(self.sizex-1))&&(cellcheck[incr]==0)):
+            if (self.getX(cell,self.sizex) == (self.sizex-1)) and (cellcheck[incr]==0):
                 continue # do not attempt to open right edge of maze
-            if((self.getY(cell,self.sizex)==(self.sizey-1))&&(cellcheck[incr]==1)):
-                continue; # do not attempt to open bottom edge of maze
-            if(*(mazepath+cell)!=*(mazepath+cell+1+cellcheck[incr]*(self.sizex-1)))
-            if mazepath[cell] != mazepath[cell+1+cellcheck[incr]]
-            {
-                cell_join(cell,cell+1+cellcheck[incr]*(self.sizex-1))
+            if (self.getY(cell,self.sizex) == (self.sizey-1)) and (cellcheck[incr]==1):
+                continue # do not attempt to open bottom edge of maze
+            if self.mazepath[cell] != self.mazepath[cell+1+cellcheck[incr]]:
+                self.cell_join(cell,cell+1+cellcheck[incr]*(self.sizex-1))
                 return True
-            }
-    return False
+
+        return False
+
+    """
+       generate() is the function that generates a random maze.  It calls connect()
+       (which, in turn, calls cell_join()) to generate the maze.
+    """
+    def generate(self):
+
+        while True:
+            complete=True
+            # pick a random cell
+            cell = self.sizex + random.randint(self.sizex*(self.sizey-1))
+            # find the next cell that can be connected
+            for incr in range(self.sizex * self.sizey):
+
+                checkcell=(incr+cell)%(self.sizex*self.sizey)
+                if (checkcell < sizex) or ((checkcell%sizex)==0):
+                    continue
+                if self.connect(checkcell):
+                    complete = False
+                    break
+            if complete == True:
+                break
+        # break walls for start and end of maze, near center
+        cell = self.sizex/4 + random.randint(self.sizex/2)
+        self.maze[cell] = self.maze[cell]&~BOTTOM
+        cell = self.sizex/4 + random.randint(self.sizex/2) + self.sizex*(self.sizey-1)
+        self.maze[cell] = self.maze[cell]&~BOTTOM
 
 class MazeScreenSaver(Group):
-
     display_size = (SCREENWIDTH, SCREENHEIGHT)
     last_move_time = 0
     move_cooldown = 0.05  # seconds
-
+    counter = 0
 
     def __init__(self):
+        print("__init__")
         super().__init__()
         self.init_graphics()
+        #self.maze = maze()
 
     def init_graphics(self):
+        print("init_graphics()")
         self.bmp = bg_bmp = Bitmap(self.display_size[0], self.display_size[1], 4)
         bg_palette = Palette(4)
         bg_palette[0] = 0x000000
@@ -124,12 +150,17 @@ class MazeScreenSaver(Group):
         bg_group.append(bg_tg)
         self.append(bg_group)
 
-    def tick(self):
+    def reset():
+        print("reset()")
 
+    def tick(self):
         now = time.monotonic()
         if now - self.last_move_time > self.move_cooldown:
             self.last_move_time = now
-            #print("tick")
+            if self.counter%20 == 0:
+                print("tick")
+            self.counter += 1
+
             return True
 
         return False
