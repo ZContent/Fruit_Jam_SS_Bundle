@@ -31,6 +31,8 @@ class maze:
     width = SCREENWIDTH
     height = SCREENHEIGHT
     counter = 0
+    startcell = -1
+    endcell = -1
     maze = []
     mazepath = []
     mazesolution = []
@@ -132,10 +134,18 @@ class maze:
             if complete == True:
                 break
         # break walls for start and end of maze, near center
-        cell = self.sizex//4 + random.randint(0,self.sizex//2)
-        self.maze[cell] = self.maze[cell]&~BOTTOM
-        cell = self.sizex//4 + random.randint(0,self.sizex//2) + self.sizex*(self.sizey-1)
-        self.maze[cell] = self.maze[cell]&~BOTTOM
+        # top to bottom
+        #self.startcell = self.sizex//4 + random.randint(0,self.sizex//2)
+        #self.maze[self.startcell] = self.maze[self.startcell]&~BOTTOM
+        #self.endcell = self.sizex//4 + random.randint(0,self.sizex//2) + self.sizex*(self.sizey-1)
+        #self.maze[self.endcell] = self.maze[self.endcell]&~BOTTOM
+        #left to right
+        self.startcell = (self.sizey//4 + random.randint(0,self.sizey//2))*self.sizex
+        print(f"start cell: {self.startcell}")
+        self.maze[self.startcell] = (self.maze[self.startcell])&~RIGHT
+        self.endcell = (self.sizey//4 + random.randint(0,self.sizey//2))*(self.sizex)-1
+        print(f"end cell: {self.endcell}")
+        self.maze[self.endcell] = (self.maze[self.endcell])&~RIGHT
 
     """
     solve_r() - recursive solve routine, called by solve()
@@ -274,7 +284,7 @@ class MazeScreenSaver(Group):
         self.append(bg_group)
         self.maze.generate()
         self.display_maze(self.maze)
-        self.maze.solve()
+        #self.maze.solve()
 
     def reset():
         print("reset()")
