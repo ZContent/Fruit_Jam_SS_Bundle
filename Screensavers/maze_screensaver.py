@@ -33,6 +33,7 @@ class maze:
     counter = 0
     maze = []
     mazepath = []
+    mazesolution = []
 
     def __init__(self):
         self.reset(10,3)
@@ -60,12 +61,15 @@ class maze:
     def getY(self,item,width):
         return item // width
 
+    def coord(self,item,width):
+        return f"[{self.getX(item,width)},{self.getY(item,width)}]"
+
     """
     cell_join() joins two cells together, effectively breaking down a wall within
     the maze.
     """
     def cell_join(self, cell1, cell2):
-        print(f"cell_join {cell1},{cell2} of {len(self.mazepath)}")
+        #print(f"cell_join {cell1},{cell2} of {len(self.mazepath)}")
         if cell2 < self.sizex*self.sizey:
             val = self.mazepath[cell2]
             # set mazepath value
@@ -133,6 +137,113 @@ class maze:
         cell = self.sizex//4 + random.randint(0,self.sizex//2) + self.sizex*(self.sizey-1)
         self.maze[cell] = self.maze[cell]&~BOTTOM
 
+    """
+    solve_r() - recursive solve routine, called by solve()
+    """
+    def solve_r(self, finish, pos, prevpos, dir):
+        print(f"solve_r({finish},{pos},{prevpos},{dir})")
+        if pos == prevpos:
+            print("same square, backing up")
+            solutioncount -= 1
+            # same square, need to back up from here
+            print("return False")
+            return False
+        self.mazesolution.append(pos)
+        if pos == finish:
+            print(f"Solved in {len(self.mazesolution)} moves")
+            return True
+        """
+        directions:
+        0: north
+        1: west
+        2: south
+        3: east
+        """
+        posy = self.getY(pos, self.sizex);
+        posx = self.getX(pos, self.sizex);
+        print(f"trying square {self.coord(pos, self.sizex)} at direction {dir}")
+
+        if dir == 0: # north
+          newx = posx
+          newy = posy - 1
+          newpos = newy * self.sizex + newx;
+          if (self.maze[newpos] & BOTTOM) == 0:
+            return self.solve_r(finish, newpos, pos, 3)
+        elif dir == 1: # west
+          newx = posx - 1
+          newy = posy
+          newpos = newy * self.sizex + newx
+          if (self.maze[newpos] & RIGHT) == 0:
+            return self.solve_r(finish, newpos, pos, 0)
+        elif dir == 2: # south
+          newx = posx
+          newy = posy + 1
+          newpos = newy * self.sizex + newx
+          if (self.maze[pos] & BOTTOM) == 0:
+            return self.solve_r(finish, newpos, pos, 1)
+        elif dir == 3: # east
+          newx = posx + 1
+          newy = posy
+          newpos = newy * self.sizex + newx
+          if (self.maze[pos] & RIGHT) == 0:
+            return self.solve_r(finish, newpos, pos, 2)
+        dir = (dir + 1) % 4
+        print(f"next direction: {dir}")
+        #solutioncount--;
+        return self.solve_r(finish, pos, prevpos, dir)
+
+    """
+    solve() - solve the maze
+    """
+    def solve(self):
+        start = 0
+        finish = 0
+
+        for i in range(self.sizex):
+            if self.maze[i] & BOTTOM == 0:
+              start = i + self.sizex #start at row below
+              break
+
+        for i in range((self.sizey-1)*self.sizex + 1,self.sizex*self.sizey):
+            if (self.maze[i] & BOTTOM) == 0:
+                finish = i
+                break
+        solutioncount = 0
+        print(f"maze start: {self.coord(start, self.sizex)}, finish: {self.coord(finish, self.sizex)}")
+
+        self.mazesolution.append(start)
+        self.solve_r(finish, start, start - self.sizex, 1)
+
+        # remove dead end moves
+        """
+        solutionpos = 0
+        while True:
+            while(solutionpos < solutioncount)
+            {
+            //Serial.println("solution pos: " + String(solutionpos) + COORD(mazesolution[solutionpos], sizex)
+            //  + ", solution count: " + String(solutioncount));
+            for(int i = solutioncount - 1; i > solutionpos; i--)
+            {
+              if(mazesolution[solutionpos] == mazesolution[i])
+              {
+                // remove dead end paths
+                //Serial.println("removing " + String(i - solutionpos) + " duplicate path items");
+                for(int j = 0; j < (solutioncount - solutionpos); j++)
+                {
+                  mazesolution[solutionpos + j] = mazesolution[i + j];
+                }
+                solutioncount -= i - solutionpos;
+              }
+            }
+            solutionpos++;
+        Serial.println("Solution reduced to " + String(solutioncount) + " moves");
+        """
+
+        # print out solution
+        print("Solution in {len(self.mazesolution)} moves")
+        for i in range(len(self.mazesolution)):
+            print(f"{i}: {self.coord(self.mazesolution[i], self.sizex)}")
+
 class MazeScreenSaver(Group):
     display_size = (SCREENWIDTH, SCREENHEIGHT)
     last_move_time = 0
@@ -163,6 +274,7 @@ class MazeScreenSaver(Group):
         self.append(bg_group)
         self.maze.generate()
         self.display_maze(self.maze)
+        self.maze.solve()
 
     def reset():
         print("reset()")
