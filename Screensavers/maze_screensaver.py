@@ -63,6 +63,9 @@ class maze:
     def getY(self,item,width):
         return item // width
 
+    def getCell(self, x, y, width):
+        return y*width + x
+        
     def coord(self,item,width):
         return f"[{self.getX(item,width)},{self.getY(item,width)}]"
 
@@ -203,9 +206,9 @@ class maze:
         return self.solve_r(finish, pos, prevpos, dir)
 
     """
-    solve() - solve the maze
+    solve()_old - solve the maze
     """
-    def solve(self):
+    def solve_old(self):
         start = 0
         finish = 0
 
@@ -253,7 +256,62 @@ class maze:
         print("Solution in {len(self.mazesolution)} moves")
         for i in range(len(self.mazesolution)):
             print(f"{i}: {self.coord(self.mazesolution[i], self.sizex)}")
-
+            
+    def solve_tick():
+        basecell = self.mazesolution[-1][0]
+        basecellx = self.getX(basecell,self.sizex)
+        basecelly = self.getY(basecell,self.sizex)
+        """
+        directions:
+        0: north
+        1: west
+        2: south
+        3: east
+        """
+        i = 0
+        for i in range(4):
+            if i == 0: # north
+                if basecelly > 0:
+                    cell = self.getCell(basecellx, basecelly-1, self.sizex)
+                    if cell == self.mazesolution[-1][0]:
+                        continue
+                    if self.maze(cell) & BOTTOM == 0:
+                        self.mazesolution.append([cell,0])
+                        break
+            if i == 1 # west
+                if basecllx > 0:
+                    cell = self.getCell(basecellx-1, basecelly, self.sizex)
+                    if cell == self.mazesolution[-1][0]:
+                        continue
+                    if self.maze(cell) & RIGHT == 0:
+                        self.mazesolution.append([cell,1])
+                        break
+            if i == 2 # south
+                if basecelly < self.sizey - 1:
+                    cell = self.getCell(basecellx, basecelly+1, self.sizex)
+                    if cell == self.mazesolution[-1][0]:
+                        continue
+                    if self.maze(cell) & BOTTOM == 0:
+                        self.mazesolution.append([cell,2])
+                        break
+            if i == 3 # south
+                if basecellx < self.sizex - 1:
+                    cell = self.getCell(basecellx+1, basecelly, self.sizex)
+                    if cell == self.mazesolution[-1][0]:
+                        continue
+                    if self.maze(cell) & RIGHT == 0:
+                        self.mazesolution.append([cell,3])
+                        break
+        print(f"i = {i}")
+        return i
+        
+    def solve():
+        self.mazesolution.clear()
+        self.mazesolution.append([self.startcell,3])
+        while self.mazesolution[-1][0] != self.endcell:
+            self.solve_tick()
+            return
+        
 class MazeScreenSaver(Group):
     display_size = (SCREENWIDTH, SCREENHEIGHT)
     last_move_time = 0
