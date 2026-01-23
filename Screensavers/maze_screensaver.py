@@ -90,7 +90,7 @@ class maze:
         if (cell < self.sizex) or (cell%self.sizex == 0): # top or left line
             return False
         # determine order of cell attempts
-        cellcheck[0]=random.randint(0,2)
+        cellcheck[0]=random.randint(0,1)
         cellcheck[1]=(cellcheck[0]+1)%2
         # check cells to see if can be connected
         for incr in range(2):
@@ -98,7 +98,8 @@ class maze:
                 continue # do not attempt to open right edge of maze
             if (self.getY(cell,self.sizex) == (self.sizey-1)) and (cellcheck[incr]==1):
                 continue # do not attempt to open bottom edge of maze
-            if self.mazepath[cell] != self.mazepath[cell+1+cellcheck[incr]]:
+            # print(cell,cellcheck[incr],self.sizex,cell+1+cellcheck[incr]*(self.sizex-1))
+            if self.mazepath[cell] != self.mazepath[cell+1+cellcheck[incr]*(self.sizex-1)]:
                 self.cell_join(cell,cell+1+cellcheck[incr]*(self.sizex-1))
                 return True
 
@@ -117,7 +118,8 @@ class maze:
             # find the next cell that can be connected
             for incr in range(self.sizex * self.sizey):
 
-                checkcell=(incr+cell)%(self.sizex*(self.sizey-1))
+                #checkcell=(incr+cell)%(self.sizex*(self.sizey-1))
+                checkcell=(incr+cell)%(self.sizex*(self.sizey))
                 if (checkcell < self.sizex) or ((checkcell%self.sizex)==0):
                     continue
                 if self.connect(checkcell):
@@ -126,9 +128,9 @@ class maze:
             if complete == True:
                 break
         # break walls for start and end of maze, near center
-        cell = self.sizex/4 + random.randint(0,self.sizex//2)
+        cell = self.sizex//4 + random.randint(0,self.sizex//2)
         self.maze[cell] = self.maze[cell]&~BOTTOM
-        cell = self.sizex/4 + random.randint(0,self.sizex//2) + self.sizex*(self.sizey-1)
+        cell = self.sizex//4 + random.randint(0,self.sizex//2) + self.sizex*(self.sizey-1)
         self.maze[cell] = self.maze[cell]&~BOTTOM
 
 class MazeScreenSaver(Group):
