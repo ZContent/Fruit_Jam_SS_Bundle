@@ -38,13 +38,13 @@ class maze:
     mazesolution = []
 
     def __init__(self):
-        #self.reset(10,3)
+        #self.reset(10)
         #random.seed(42) # for debugging
         pass
 
-    def reset(self,cs,lw):
+    def reset(self,cs):
         self.cellsize = cs
-        self.lwidth = lw
+        #self.lwidth = lw
         self.sizex = self.width // self.cellsize
         self.sizey = self.height // self.cellsize
         self.mazepath.clear()
@@ -125,7 +125,14 @@ class maze:
     """
     def generate(self):
         print("generate()")
-        self.reset(10,3)
+        self.reset(10)
+        while not self.generate_tick(0.05):
+            pass
+        print("generate() done")
+
+    def generate_old(self):
+        print("generate()")
+        self.reset(10)
         while True:
             complete=True
             # pick a random cell
@@ -159,12 +166,52 @@ class maze:
         print(f"**end cell: {self.endcell} {self.coord(self.endcell,self.sizex)}")
         self.maze[self.endcell] = (self.maze[self.endcell])&~RIGHT
 
+    def generate_tick(self,timer):
+        print("generate_tick()")
+        start = time.monotonic()
+        complete=True
+        while (timer == 0) or (start + timer) > time.monotonic():
+            complete=True
+            # pick a random cell
+            cell = self.sizex + random.randint(0,self.sizex*(self.sizey-1))
+            # find the next cell that can be connected
+            for incr in range(self.sizex * self.sizey):
+
+                #checkcell=(incr+cell)%(self.sizex*(self.sizey-1))
+                checkcell=(incr+cell)%(self.sizex*(self.sizey))
+                if (checkcell < self.sizex) or ((checkcell%self.sizex)==0):
+                    continue
+                if self.connect(checkcell):
+                    complete = False
+                    break
+            if complete == True:
+                break
+        if complete == True:
+            # break walls for start and end of maze, near center
+            # top to bottom
+            #self.startcell = self.sizex//4 + random.randint(0,self.sizex//2)
+            #self.maze[self.startcell] = self.maze[self.startcell]&~BOTTOM
+            #self.endcell = self.sizex//4 + random.randint(0,self.sizex//2) + self.sizex*(self.sizey-1)
+            #self.maze[self.endcell] = self.maze[self.endcell]&~BOTTOM
+            #left to right
+            self.startcell = (self.sizey//4 + random.randint(0,self.sizey//2))*self.sizex
+            self.mazesolution.append([self.startcell,3])
+            self.maze[self.startcell] = (self.maze[self.startcell])&~RIGHT
+            self.startcell += 1
+            print(f"**start cell: {self.startcell} {self.coord(self.startcell,self.sizex)}")
+            self.mazesolution.append([self.startcell,0])
+            self.endcell = (self.sizey//4 + random.randint(0,self.sizey//2))*self.sizex-1
+            print(f"**end cell: {self.endcell} {self.coord(self.endcell,self.sizex)}")
+            self.maze[self.endcell] = (self.maze[self.endcell])&~RIGHT
+            return True
+        return False
+
     def solve_tick(self):
         basecell = self.mazesolution[-1][0]
         basedir = self.mazesolution[-1][1]
         basecellx = self.getX(basecell,self.sizex)
         basecelly = self.getY(basecell,self.sizex)
-        print(f"checking cell {basecell} {self.coord(basecell,self.sizex)}")
+        #print(f"checking cell {basecell} {self.coord(basecell,self.sizex)}")
         """
         directions:
         0: north
@@ -178,7 +225,7 @@ class maze:
                     cell = self.getCell(basecellx, basecelly-1, self.sizex)
                     if cell != self.mazesolution[-2][0]:
                         if (self.maze[cell] & BOTTOM) == 0:
-                            print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
+                            #print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
                             self.mazesolution[-1][1] = 0
                             self.mazesolution.append([cell,0])
                             return True
@@ -187,7 +234,7 @@ class maze:
                     cell = self.getCell(basecellx-1, basecelly, self.sizex)
                     if cell != self.mazesolution[-2][0]:
                         if (self.maze[cell] & RIGHT) == 0:
-                            print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
+                            #print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
                             self.mazesolution[-1][1] = 1
                             self.mazesolution.append([cell,0])
                             return True
@@ -196,7 +243,7 @@ class maze:
                     cell = self.getCell(basecellx, basecelly+1, self.sizex)
                     if cell != self.mazesolution[-2][0]:
                         if (self.maze[basecell] & BOTTOM) == 0:
-                            print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
+                            #print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
                             self.mazesolution[-1][1] = 2
                             self.mazesolution.append([cell,0])
                             return True
@@ -205,7 +252,7 @@ class maze:
                     cell = self.getCell(basecellx+1, basecelly, self.sizex)
                     if cell != self.mazesolution[-2][0]:
                         if (self.maze[basecell] & RIGHT) == 0:
-                            print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
+                            #print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
                             self.mazesolution[-1][1] = 3
                             self.mazesolution.append([cell,0])
                             return True
@@ -220,10 +267,11 @@ class maze:
         count = 0
         while self.mazesolution[-1][0] != self.endcell:
             if self.solve_tick():
-                print(f"add element {self.mazesolution[-1]} (count:{len(self.mazesolution)})")
+                #print(f"add element {self.mazesolution[-1]} (count:{len(self.mazesolution)})")
+                pass
             else:
                 element = self.mazesolution.pop()
-                print(f"popped element {element}  (count:{len(self.mazesolution)})")
+                #print(f"popped element {element}  (count:{len(self.mazesolution)})")
 
             count += 1
             if count > 10000:
@@ -251,6 +299,7 @@ class MazeScreenSaver(Group):
     lwidth = 3
     cellsize = 10
     solved = False
+    generated = False
     time_before_solve = 5
     time_before_new_maze = 10
 
@@ -260,7 +309,6 @@ class MazeScreenSaver(Group):
         self.maze = maze()
         self.init_graphics()
         self.solved = False
-        self.solve_countdown = self.time_before_solve
 
     def init_graphics(self):
         print("init_graphics()")
@@ -278,6 +326,7 @@ class MazeScreenSaver(Group):
         self.append(bg_group)
         self.maze.generate()
         self.display_maze(self.maze)
+        self.solve_countdown = self.time_before_solve
         #self.solve()
 
     def solve(self):
@@ -309,6 +358,10 @@ class MazeScreenSaver(Group):
             self.last_move_time = now
 
             print("tick")
+            if not self.generated:
+                #if self.maze.generate_tick(0.05):
+                #    self.generated = True
+                pass
             if not self.solved:
                 if self.solve_countdown <= 0:
                     if(not self.solved):
@@ -329,7 +382,6 @@ class MazeScreenSaver(Group):
                                 for celly in range(1,self.maze.sizey):
                                     cell = celly*self.maze.sizex + cellx
                                     self.draw_box(cell,WHITE)
-                            self.new_maze_countdown = self.time_before_new_maze
                             # draw solution lines
                             count = 0
                             lastcell = self.maze.mazesolution[2][0]
@@ -360,6 +412,7 @@ class MazeScreenSaver(Group):
                                 lastcell = cell[0]
 
                                 count+=1
+                            self.new_maze_countdown = self.time_before_new_maze
                 else:
                     self.solve_countdown -= self.move_cooldown
                 return True
@@ -367,11 +420,13 @@ class MazeScreenSaver(Group):
                 self.new_maze_countdown -= self.move_cooldown
                 if self.new_maze_countdown <= 0:
                     self.solved = False
-                    self.maze.reset(10,3)
+                    self.generated = False
+                    self.maze.reset(10)
                     self.display_maze(self.maze)
                     time.sleep(1)
                     self.maze.generate()
                     self.display_maze(self.maze)
+                    self.solve_countdown = self.time_before_solve
         return False
 
     def draw_box(self,cell,color):
