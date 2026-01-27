@@ -349,8 +349,13 @@ class MazeScreenSaver(Group):
                                         t = y1
                                         y1 = y2
                                         y2 = t
-                                    print(f"debug2 draw line from {lastcell} to {cell[0]} ({x1},{y1},{x2},{y2})")
-                                    bitmaptools.fill_region(self.bmp,x1-1,y1-1,min(self.maze.width-1,x2)+4,min(self.maze.height-1,y2)+4,RED)
+                                    #print(f"debug2 draw line from {lastcell} to {cell[0]} ({x1},{y1},{x2},{y2})")
+                                    bitmaptools.fill_region(self.bmp,
+                                        x1+self.xcenter//2+1, #x1-2,
+                                        y1+self.ycenter//2+1, #y1-2,
+                                        min(self.maze.width-1,x2)-self.xcenter//2, #3,
+                                        min(self.maze.height-1,y2)-self.ycenter//2, #3,
+                                        RED)
                                     #self.draw_box(cell[0],BLACK)
                                 lastcell = cell[0]
 
@@ -372,10 +377,10 @@ class MazeScreenSaver(Group):
     def draw_box(self,cell,color):
         x = self.maze.getX(cell,self.maze.sizex)
         y = self.maze.getY(cell,self.maze.sizex)
-        x1 = x*self.maze.cellsize - 1
-        x2 = x*self.maze.cellsize + 4
-        y1 = y*self.maze.cellsize - 1
-        y2 = y*self.maze.cellsize + 4
+        x1 = x*self.maze.cellsize + self.xcenter//2 + 1 #2
+        x2 = x*self.maze.cellsize - self.xcenter//2 #3
+        y1 = y*self.maze.cellsize + self.ycenter//2 + 1 #2
+        y2 = y*self.maze.cellsize - self.ycenter//2 #3
         #print(f"draw_box: cell {cell} ({x},{y}) to {x1},{y1}-{x2},{y2}")
         bitmaptools.fill_region(self.bmp,x1,y1,x2,y2,color)
 
@@ -383,8 +388,8 @@ class MazeScreenSaver(Group):
     display_maze() prints the maze on the graphics device
     """
     def display_maze(self,maze):
-        self.xcenter = 0 - maze.cellsize//2
-        self.ycenter = 0 - maze.cellsize//2
+        self.xcenter = 0 - maze.cellsize//2 - self.lwidth//2
+        self.ycenter = 0 - maze.cellsize//2 - self.lwidth//2
         print(f"maze centering adjustment: {self.xcenter}, {self.ycenter}")
         self.bmp.fill(WHITE)
 
