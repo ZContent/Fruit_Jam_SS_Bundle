@@ -38,14 +38,18 @@ class maze:
     mazesolution = []
 
     def __init__(self):
-        self.reset(10,3)
+        #self.reset(10,3)
         #random.seed(42) # for debugging
+        pass
 
     def reset(self,cs,lw):
         self.cellsize = cs
         self.lwidth = lw
         self.sizex = self.width // self.cellsize
         self.sizey = self.height // self.cellsize
+        self.mazepath.clear()
+        self.maze.clear()
+        self.mazesolution.clear()
         for i in range(self.sizex * self.sizey):
             if i == 0:
                 item = 0
@@ -121,6 +125,7 @@ class maze:
     """
     def generate(self):
         print("generate()")
+        self.reset(10,3)
         while True:
             complete=True
             # pick a random cell
@@ -247,6 +252,7 @@ class MazeScreenSaver(Group):
     cellsize = 10
     solved = False
     time_before_solve = 5
+    time_before_new_maze = 10
 
     def __init__(self):
         print("__init__")
@@ -305,11 +311,6 @@ class MazeScreenSaver(Group):
             print("tick")
             if not self.solved:
                 if self.solve_countdown <= 0:
-                    #self.draw_box(self.maze.startcell,RED)
-                    #self.draw_box(self.maze.endcell,RED)
-                    #while True:
-                    #    pass
-                    #return
                     if(not self.solved):
                         if self.maze.mazesolution[-1][0] != self.maze.endcell:
                             if self.maze.solve_tick():
@@ -323,6 +324,7 @@ class MazeScreenSaver(Group):
                         else:
                             print("maze solved!!!")
                             self.solved = True
+                            self.new_maze_countdown = self.time_before_new_maze
                             # draw lines
                             count = 0
                             lastcell = self.maze.mazesolution[2][0]
@@ -342,7 +344,7 @@ class MazeScreenSaver(Group):
                                         t = y1
                                         y1 = y2
                                         y2 = t
-                                    #print(f"debug2 draw line from {lastcell} to {cell[0]} ({x1},{y1},{x2},{y2})")
+                                    print(f"debug2 draw line from {lastcell} to {cell[0]} ({x1},{y1},{x2},{y2})")
                                     bitmaptools.fill_region(self.bmp,x1-1,y1-1,min(self.maze.width-1,x2)+4,min(self.maze.height-1,y2)+4,RED)
                                     #self.draw_box(cell[0],BLACK)
                                 lastcell = cell[0]
@@ -351,6 +353,15 @@ class MazeScreenSaver(Group):
                 else:
                     self.solve_countdown -= self.move_cooldown
                 return True
+            else:
+                self.new_maze_countdown -= self.move_cooldown
+                if self.new_maze_countdown <= 0:
+                    self.solved = False
+                    self.maze.reset(10,3)
+                    self.display_maze(self.maze)
+                    time.sleep(1)
+                    self.maze.generate()
+                    self.display_maze(self.maze)
         return False
 
     def draw_box(self,cell,color):
