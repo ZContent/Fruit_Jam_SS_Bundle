@@ -324,8 +324,13 @@ class MazeScreenSaver(Group):
                         else:
                             print("maze solved!!!")
                             self.solved = True
+                            # clear mouse droppings
+                            for cellx in range(1,self.maze.sizex):
+                                for celly in range(1,self.maze.sizey):
+                                    cell = celly*self.maze.sizex + cellx
+                                    self.draw_box(cell,WHITE)
                             self.new_maze_countdown = self.time_before_new_maze
-                            # draw lines
+                            # draw solution lines
                             count = 0
                             lastcell = self.maze.mazesolution[2][0]
                             for cell in self.maze.mazesolution:
@@ -371,7 +376,7 @@ class MazeScreenSaver(Group):
         x2 = x*self.maze.cellsize + 4
         y1 = y*self.maze.cellsize - 1
         y2 = y*self.maze.cellsize + 4
-        print(f"draw_box: cell {cell} ({x},{y}) to {x1},{y1}-{x2},{y2}")
+        #print(f"draw_box: cell {cell} ({x},{y}) to {x1},{y1}-{x2},{y2}")
         bitmaptools.fill_region(self.bmp,x1,y1,x2,y2,color)
 
     """
