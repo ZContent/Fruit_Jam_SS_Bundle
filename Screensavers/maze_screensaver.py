@@ -365,6 +365,8 @@ class MazeScreenSaver(Group):
             if not self.solved:
                 if self.solve_countdown <= 0:
                     if(not self.solved):
+                        if len(self.maze.mazesolution) <= 2:
+                            self.draw_box(self.maze.mazesolution[-1][0],RED)
                         if self.maze.mazesolution[-1][0] != self.maze.endcell:
                             if self.maze.solve_tick():
                                 self.draw_box(self.maze.mazesolution[-1][0],RED)
