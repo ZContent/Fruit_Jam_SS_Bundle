@@ -294,7 +294,7 @@ class maze:
 class MazeScreenSaver(Group):
     display_size = (SCREENWIDTH, SCREENHEIGHT)
     last_move_time = 0
-    move_cooldown = .05  # seconds
+    move_cooldown = .01  # seconds
     counter = 0
     lwidth = 3
     cellsize = 10
@@ -386,7 +386,15 @@ class MazeScreenSaver(Group):
                                     self.draw_box(cell,WHITE)
                             # draw solution lines
                             count = 0
-                            lastcell = self.maze.mazesolution[2][0]
+                            lastcell = self.maze.mazesolution[1][0]
+
+                            print(f"debug: start:{self.maze.startcell}")
+                            x1 = 0-self.xcenter//2+1
+                            y1 = self.maze.getY(self.maze.startcell,self.maze.sizex)*self.maze.cellsize+self.ycenter//2+1
+                            x2 = x1 + self.maze.cellsize-self.lwidth
+                            y2 = y1 + self.maze.cellsize-self.lwidth-2
+                            bitmaptools.fill_region(self.bmp,x1,y1,x2,y2,RED)
+
                             for cell in self.maze.mazesolution:
                                 if count > 1:
                                     x1 = self.maze.getX(lastcell,self.maze.sizex)*self.maze.cellsize
@@ -403,9 +411,10 @@ class MazeScreenSaver(Group):
                                         t = y1
                                         y1 = y2
                                         y2 = t
-                                    #print(f"debug2 draw line from {lastcell} to {cell[0]} ({x1},{y1},{x2},{y2})")
+
+                                    print(f"debug2 draw line from {lastcell} to {cell[0]} ({x1},{y1},{x2},{y2})")
                                     bitmaptools.fill_region(self.bmp,
-                                        x1+self.xcenter//2+1, #x1-2,
+                                        max(x1+self.xcenter//2+1,0-self.xcenter), #x1-2,
                                         y1+self.ycenter//2+1, #y1-2,
                                         min(self.maze.width-1,x2)-self.xcenter//2, #3,
                                         min(self.maze.height-1,y2)-self.ycenter//2, #3,
@@ -414,6 +423,14 @@ class MazeScreenSaver(Group):
                                 lastcell = cell[0]
 
                                 count+=1
+                            print(f"debug: end:{self.maze.endcell}")
+                            x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.maze.cellsize+self.xcenter//2+1
+                            #x1 = 0-self.xcenter//2+1
+                            y1 = self.maze.getY(self.maze.endcell,self.maze.sizex)*self.maze.cellsize+self.ycenter//2+1
+                            x2 = SCREENWIDTH + self.xcenter//2
+                            y2 = y1 + self.maze.cellsize-self.lwidth-2
+                            bitmaptools.fill_region(self.bmp,x1,y1,x2,y2,RED)
+
                             self.new_maze_countdown = self.time_before_new_maze
                 else:
                     self.solve_countdown -= self.move_cooldown
