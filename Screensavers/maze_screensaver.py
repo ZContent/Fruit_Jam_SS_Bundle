@@ -223,18 +223,18 @@ class maze:
             if i == 0: # north
                 if basecelly > 0:
                     cell = self.getCell(basecellx, basecelly-1, self.sizex)
-                    if cell != self.mazesolution[-2][0]:
+                    if cell != self.mazesolution[-2][0] and basecelly-1 != 0:
                         if (self.maze[cell] & BOTTOM) == 0:
-                            #print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
+                            print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
                             self.mazesolution[-1][1] = 0
                             self.mazesolution.append([cell,0])
                             return True
             if i == 1: # west
                 if basecellx > 0:
                     cell = self.getCell(basecellx-1, basecelly, self.sizex)
-                    if cell != self.mazesolution[-2][0]:
+                    if cell != self.mazesolution[-2][0] and basecellx-1 != 0:
                         if (self.maze[cell] & RIGHT) == 0:
-                            #print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
+                            print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
                             self.mazesolution[-1][1] = 1
                             self.mazesolution.append([cell,0])
                             return True
@@ -243,7 +243,7 @@ class maze:
                     cell = self.getCell(basecellx, basecelly+1, self.sizex)
                     if cell != self.mazesolution[-2][0]:
                         if (self.maze[basecell] & BOTTOM) == 0:
-                            #print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
+                            print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
                             self.mazesolution[-1][1] = 2
                             self.mazesolution.append([cell,0])
                             return True
@@ -252,7 +252,7 @@ class maze:
                     cell = self.getCell(basecellx+1, basecelly, self.sizex)
                     if cell != self.mazesolution[-2][0]:
                         if (self.maze[basecell] & RIGHT) == 0:
-                            #print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
+                            print(f"debug {i}: {cell} {basecell} {self.mazesolution[-1]}")
                             self.mazesolution[-1][1] = 3
                             self.mazesolution.append([cell,0])
                             return True
@@ -302,6 +302,8 @@ class MazeScreenSaver(Group):
     generated = False
     time_before_solve = 5
     time_before_new_maze = 10
+    solve_countdown = 0
+    mode = 1
 
     def __init__(self):
         print("__init__")
@@ -312,24 +314,24 @@ class MazeScreenSaver(Group):
 
     def init_graphics(self):
         print("init_graphics()")
-        self.bmp = bg_bmp = Bitmap(self.display_size[0], self.display_size[1], 4)
+        self.bmp = Bitmap(self.display_size[0], self.display_size[1], 4)
         bg_palette = Palette(4)
         bg_palette[0] = 0x000000
         bg_palette[1] = 0xcccccc
         bg_palette[2] = 0xffffff
         bg_palette[3] = 0xff0000
 
-        bg_tg = TileGrid(bitmap=bg_bmp, pixel_shader=bg_palette)
-        bg_bmp.fill(WHITE)
+        bg_tg = TileGrid(bitmap=self.bmp, pixel_shader=bg_palette)
+        self.bmp.fill(BLACK)
         bg_group = Group(scale=1)
         bg_group.append(bg_tg)
         self.append(bg_group)
-        self.maze.generate()
-        self.display_maze(self.maze)
-        self.solve_countdown = self.time_before_solve
+        #self.maze.generate()
+        #self.display_maze(self.maze)
+        #self.solve_countdown = self.time_before_solve
         #self.solve()
 
-    def solve(self):
+    def solve_old(self):
         self.maze.mazesolution.clear()
         self.maze.mazesolution.append([self.maze.startcell,3])
         self.maze.mazesolution.append([self.maze.startcell,3])
@@ -353,15 +355,124 @@ class MazeScreenSaver(Group):
         print("reset()")
 
     def tick(self):
+        """
+        modes:
+        1: reset()
+        2: generate()
+        3: pause before solve
+        4: solve
+        5: pause after solve
+        """
         now = time.monotonic()
+        time.sleep(.001)
         if now - self.last_move_time > self.move_cooldown:
             self.last_move_time = now
 
-            print("tick")
-            if not self.generated:
-                #if self.maze.generate_tick(0.05):
-                #    self.generated = True
-                pass
+            #print(f"tick mode:{self.mode}")
+            print(".",end="")
+            if self.mode == 1:
+                self.maze.reset(10)
+                self.mode = 2
+                print(f"tick mode:{self.mode}")
+            if self.mode == 2:
+                #self.maze.generate()
+                if self.maze.generate_tick(.05):
+                    self.display_maze(self.maze)
+                    self.solve_countdown = self.time_before_solve
+                    self.mode = 3
+                    print(f"tick mode:{self.mode}")
+            if self.mode == 3:
+                self.solve_countdown -= self.move_cooldown
+                if self.solve_countdown <= 0:
+                    self.maze.mazesolution.clear()
+                    self.maze.mazesolution.append([self.maze.startcell,0])
+                    self.maze.mazesolution.append([self.maze.startcell,0])
+                    self.mode = 4
+                    print(f"tick mode:{self.mode}")
+            if self.mode == 4:
+                #if(not self.solved):
+                if len(self.maze.mazesolution) <= 2:
+                    self.draw_box(self.maze.mazesolution[-1][0],RED)
+                if self.maze.mazesolution[-1][0] != self.maze.endcell:
+                    if self.maze.solve_tick():
+                        print(f"add element {self.maze.mazesolution[-1]} (count:{len(self.maze.mazesolution)})")
+                        self.draw_box(self.maze.mazesolution[-1][0],RED)
+                    else:
+                        self.draw_box(self.maze.mazesolution[-1][0],GRAY)
+                        element = self.maze.mazesolution.pop()
+                        print(f"count:{len(self.maze.mazesolution)}")
+                        #if len(self.maze.mazesolution) < 2:
+                        #    print(f"element: {element}")
+                        #    while True:
+                        #        pass
+                        self.maze.mazesolution[-1][1] += 1
+                        print(f"popped element {element}  (count:{len(self.maze.mazesolution)})")
+                else:
+                    print("maze solved!!!")
+                    self.solved = True
+                    # clear mouse droppings
+                    for cellx in range(1,self.maze.sizex):
+                        for celly in range(1,self.maze.sizey):
+                            cell = celly*self.maze.sizex + cellx
+                            self.draw_box(cell,WHITE)
+                    # draw solution lines
+                    count = 0
+                    lastcell = self.maze.mazesolution[1][0]
+
+                    print(f"debug: start:{self.maze.startcell}")
+                    x1 = 0-self.xcenter//2+1
+                    y1 = self.maze.getY(self.maze.startcell,self.maze.sizex)*self.maze.cellsize+self.ycenter//2+1
+                    x2 = x1 + self.maze.cellsize-self.lwidth
+                    y2 = y1 + self.maze.cellsize-self.lwidth-2
+                    bitmaptools.fill_region(self.bmp,x1,y1,x2,y2,RED)
+
+                    for cell in self.maze.mazesolution:
+                        if count > 1:
+                            x1 = self.maze.getX(lastcell,self.maze.sizex)*self.maze.cellsize
+                            y1 = self.maze.getY(lastcell,self.maze.sizex)*self.maze.cellsize
+                            x2 = self.maze.getX(cell[0],self.maze.sizex)*self.maze.cellsize
+                            y2 = self.maze.getY(cell[0],self.maze.sizex)*self.maze.cellsize
+                            #print(f"debug1 draw line from {lastcell} to {cell[0]} ({x1},{y1},{x2},{y2})")
+                            # fix coordinate order for fill_region()
+                            if x1 > x2:
+                                t = x1
+                                x1 = x2
+                                x2 = t
+                            if y1 > y2:
+                                t = y1
+                                y1 = y2
+                                y2 = t
+
+                            print(f"debug2 draw line from {lastcell} to {cell[0]} ({x1},{y1},{x2},{y2})")
+                            bitmaptools.fill_region(self.bmp,
+                                max(x1+self.xcenter//2+1,0-self.xcenter), #x1-2,
+                                y1+self.ycenter//2+1, #y1-2,
+                                min(self.maze.width-1,x2)-self.xcenter//2, #3,
+                                min(self.maze.height-1,y2)-self.ycenter//2, #3,
+                                RED)
+                            #self.draw_box(cell[0],BLACK)
+                        lastcell = cell[0]
+
+                        count+=1
+                    print(f"debug: end:{self.maze.endcell}")
+                    x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.maze.cellsize+self.xcenter//2+1
+                    #x1 = 0-self.xcenter//2+1
+                    y1 = self.maze.getY(self.maze.endcell,self.maze.sizex)*self.maze.cellsize+self.ycenter//2+1
+                    x2 = SCREENWIDTH + self.xcenter//2
+                    y2 = y1 + self.maze.cellsize-self.lwidth-2
+                    bitmaptools.fill_region(self.bmp,x1,y1,x2,y2,RED)
+
+                    self.new_maze_countdown = self.time_before_new_maze
+                    self.mode = 5
+                    print(f"tick mode:{self.mode}")
+            if self.mode == 5:
+                self.new_maze_countdown -= self.move_cooldown
+                if self.new_maze_countdown <= 0:
+                    self.mode = 1
+                    print(f"tick mode:{self.mode}")
+        return True
+
+        """
             if not self.solved:
                 if self.solve_countdown <= 0:
                     if(not self.solved):
@@ -446,7 +557,7 @@ class MazeScreenSaver(Group):
                     self.maze.generate()
                     self.display_maze(self.maze)
                     self.solve_countdown = self.time_before_solve
-        return False
+        """
 
     def draw_box(self,cell,color):
         x = self.maze.getX(cell,self.maze.sizex)
