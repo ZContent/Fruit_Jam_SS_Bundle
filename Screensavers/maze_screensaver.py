@@ -424,7 +424,7 @@ class MazeScreenSaver(Group):
                     x1 = self.maze.getX(self.maze.startcell,self.maze.sizex)
                     y1 = self.maze.getY(self.maze.startcell,self.maze.sizex)*self.cellsize+self.ycenter+(self.lwidth-self.lwidth//2)
                     x2 = x1 + self.cellsize-self.lwidth-1
-                    y2 = y1 + self.cellsize-self.lwidth-1
+                    y2 = y1 + self.cellsize-self.lwidth-2
                     print(f"debug start line at {lastcell} ({x1},{y1},{x2},{y2})")
                     bitmaptools.fill_region(self.bmp,x1,y1,x2,y2,RED)
 
@@ -469,8 +469,8 @@ class MazeScreenSaver(Group):
 
                     x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.cellsize+self.xcenter+self.lwidth//2+1
                     y1 = self.maze.getY(self.maze.endcell,self.maze.sizex)*self.cellsize+self.ycenter+self.lwidth//2+1
-                    x2 = x1+self.cellsize-2
-                    y2 = y1+self.cellsize-self.lwidth-1
+                    x2 = x1+self.cellsize-self.lwidth
+                    y2 = y1+self.cellsize-self.lwidth-2
                     print(f"debug end line at {self.maze.endcell} ({x1},{y1},{x2},{y2})")
                     bitmaptools.fill_region(self.bmp,x1,y1,x2,y2,RED)
 
