@@ -18,17 +18,17 @@ import adafruit_imageload
 # 14 pixels per cell (easy)
 #MAZEX=22
 #MAZEY=17
-#LWIDTH=3
+#LWIDTH=4
 
 # 10 pixels per cell (medium)
-MAZEX=32
-MAZEY=24
-LWIDTH=3
+#MAZEX=32
+#MAZEY=24
+#LWIDTH=3
 
 # 7 pixels per cell (hard)
-#MAZEX=45
-#MAZEY=34
-#LWIDTH=3
+MAZEX=45
+MAZEY=34
+LWIDTH=2
 
 SCREENWIDTH=320
 SCREENHEIGHT=240
@@ -458,7 +458,6 @@ class MazeScreenSaver(Group):
                                 x2-self.lwidth,
                                 y2-self.lwidth,
                                 RED)
-                            #self.draw_box(cell[0],BLACK)
                         lastcell = cell[0]
 
                         count+=1
@@ -468,9 +467,9 @@ class MazeScreenSaver(Group):
                     #x2 = min(x2 + self.cellsize,SCREENWIDTH)
                     #y2 = y1 + self.cellsize-self.lwidth-2
 
-                    x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.cellsize+self.xcenter+(self.lwidth-self.lwidth//2)
-                    y1 = self.maze.getY(self.maze.endcell,self.maze.sizex)*self.cellsize+self.ycenter+(self.lwidth-self.lwidth//2)
-                    x2 = x1+self.cellsize-self.lwidth
+                    x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.cellsize+self.xcenter+self.lwidth//2+1
+                    y1 = self.maze.getY(self.maze.endcell,self.maze.sizex)*self.cellsize+self.ycenter+self.lwidth//2+1
+                    x2 = x1+self.cellsize-1
                     y2 = y1+self.cellsize-self.lwidth-2
                     print(f"debug end line at {self.maze.endcell} ({x1},{y1},{x2},{y2})")
                     bitmaptools.fill_region(self.bmp,x1,y1,x2,y2,RED)
