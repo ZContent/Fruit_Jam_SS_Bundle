@@ -18,14 +18,17 @@ import adafruit_imageload
 # 14 pixels per cell (easy)
 #MAZEX=22
 #MAZEY=17
+#LWIDTH=3
 
 # 10 pixels per cell (medium)
 MAZEX=32
 MAZEY=24
+LWIDTH=3
 
 # 7 pixels per cell (hard)
 #MAZEX=45
 #MAZEY=34
+#LWIDTH=3
 
 SCREENWIDTH=320
 SCREENHEIGHT=240
@@ -58,26 +61,6 @@ class maze:
 
         self.sizex = sizex+1
         self.sizey = sizey+1
-        self.mazepath.clear()
-        self.maze.clear()
-        self.mazesolution.clear()
-        for i in range(self.sizex * self.sizey):
-            if i == 0:
-                item = 0
-            elif i < self.sizex:
-                item = BOTTOM
-            elif i % self.sizex == 0:
-            	item = RIGHT
-            else:
-            	item = BOTTOM | RIGHT
-            self.maze.append(item)
-            self.mazepath.append(i)
-
-    def reset_old(self,cs):
-        self.cellsize = cs
-        #self.lwidth = lw
-        self.sizex = self.width // self.cellsize
-        self.sizey = self.height // self.cellsize
         self.mazepath.clear()
         self.maze.clear()
         self.mazesolution.clear()
@@ -327,7 +310,7 @@ class MazeScreenSaver(Group):
     last_move_time = 0
     move_cooldown = .01  # seconds
     counter = 0
-    lwidth = 3
+    lwidth = LWIDTH
     cellsize = min(SCREENWIDTH//MAZEX,SCREENHEIGHT//MAZEY)
     solved = False
     generated = False
@@ -490,12 +473,12 @@ class MazeScreenSaver(Group):
 
                         count+=1
                     print(f"debug: end:{self.maze.endcell}")
-                    #x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.cellsize+self.xcenter//2+1
-                    #y1 = self.maze.getY(self.maze.endcell,self.maze.sizex)*self.cellsize+self.ycenter//2+1
+                    #x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.cellsize+self.xcenter+1
+                    #y1 = self.maze.getY(self.maze.endcell,self.maze.sizex)*self.cellsize+self.ycenter+1
                     #x2 = min(x2 + self.cellsize,SCREENWIDTH)
                     #y2 = y1 + self.cellsize-self.lwidth-2
 
-                    x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.cellsize+self.xcenter//2+1
+                    x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.cellsize+self.xcenter+1
                     y1 = self.maze.getY(self.maze.endcell,self.maze.sizex)*self.cellsize+self.ycenter+(self.lwidth-self.lwidth//2)
                     x2 = x1 + self.lwidth
                     y2 = y1 + self.cellsize-self.lwidth-2
@@ -515,9 +498,9 @@ class MazeScreenSaver(Group):
     def draw_box(self,cell,color):
         x = self.maze.getX(cell,self.maze.sizex)
         y = self.maze.getY(cell,self.maze.sizex)
-        x1 = x*self.cellsize + self.xcenter//2 - (self.lwidth-self.lwidth//2)-1
+        x1 = x*self.cellsize + self.xcenter + (self.lwidth//2) + 1
         x2 = x1+self.cellsize - self.lwidth-2
-        y1 = y*self.cellsize + self.ycenter//2 - (self.lwidth-self.lwidth//2)-1
+        y1 = y*self.cellsize + self.ycenter  + (self.lwidth//2) + 1
         y2 = y1+self.cellsize - self.lwidth-2
         #print(f"draw_box: cell {cell} ({x},{y}) to {x1},{y1}-{x2},{y2}")
         bitmaptools.fill_region(self.bmp,x1,y1,x2,y2,color)
@@ -526,10 +509,11 @@ class MazeScreenSaver(Group):
     display_maze() prints the maze on the graphics device
     """
     def display_maze(self,maze):
-        #self.xcenter = 0 - self.cellsize//2 - self.lwidth//2
-        #self.ycenter = 0 - self.cellsize//2 - self.lwidth//2
-        self.xcenter = (SCREENWIDTH-self.cellsize*(self.maze.sizex-1))//2-self.cellsize
-        self.ycenter = (SCREENHEIGHT-self.cellsize*(self.maze.sizey-1))//2-self.cellsize
+        #self.xcenter = (SCREENWIDTH-self.cellsize*(self.maze.sizex-1))//2-self.cellsize
+        #self.ycenter = (SCREENHEIGHT-self.cellsize*(self.maze.sizey-1))//2-self.cellsize
+
+        self.xcenter = -self.cellsize
+        self.ycenter = -self.cellsize
 
         print(f"maze centering adjustment: {self.xcenter}, {self.ycenter}")
         self.bmp.fill(WHITE)
@@ -545,7 +529,7 @@ class MazeScreenSaver(Group):
                     xend = incrx
                     x1 = self.xcenter + xstart*self.cellsize-(self.lwidth-self.lwidth//2)
                     y1 = self.ycenter + (incry+1)*self.cellsize-(self.lwidth-self.lwidth//2)
-                    x2 = x1 + min(SCREENWIDTH,(xend - xstart)*self.cellsize+self.lwidth)
+                    x2 = x1 + min(maze.sizex*self.cellsize,(xend - xstart)*self.cellsize+self.lwidth)
                     y2 = y1 + self.lwidth
                     print(f"debug1 line: xstart:{xstart}, xend {xend} * {self.cellsize} / ({x1},{y1},{x2},{y2})")
                     bitmaptools.fill_region(self.bmp,max(0,x1),max(0,y1),min(SCREENWIDTH,x2),y2,BLACK)
@@ -556,7 +540,7 @@ class MazeScreenSaver(Group):
                 xend = (maze.sizex)
                 x1 = max(0,self.xcenter + xstart*self.cellsize-self.lwidth//2)
                 y1 = self.ycenter + (incry+1)*self.cellsize-(self.lwidth-self.lwidth//2)
-                x2 = x1 + (xend - xstart)*self.cellsize+self.lwidth
+                x2 = x1 + (xend - xstart)*self.cellsize+self.lwidth//2
                 y2 = y1 + self.lwidth
                 print(f"debug2 line: xstart:{xstart}, xend {xend} * {self.cellsize} / ({x1},{y1},{x2},{y2})")
                 bitmaptools.fill_region(self.bmp,x1,max(0,y1),min(SCREENWIDTH,x2),min(SCREENHEIGHT,y2),BLACK)
