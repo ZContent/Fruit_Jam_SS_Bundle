@@ -15,9 +15,16 @@ import bitmaptools
 
 import adafruit_imageload
 
-# maze pick
-# pick a # from maze_list, or -1 for random pick
-MAZE_PICK = -1
+MAZE_RANDOM = -1
+MAZE_SEQUENCE = -2
+
+"""
+ Pick a maze from the list
+ pick a # from maze_list, or
+ MAZE_RANDOM for random pick,
+ MAZE_SEQUENCE for sequencial pick
+"""
+MAZE_PICK = MAZE_SEQUENCE
 
 # [columns,rows,wall width]
 maze_list = [
@@ -273,6 +280,7 @@ class MazeScreenSaver(Group):
         #self.maze = self.new_maze(-1)
         self.init_graphics()
         self.solved = False
+        self.maze_item = -1
 
     def init_graphics(self):
         print("init_graphics()")
@@ -291,18 +299,20 @@ class MazeScreenSaver(Group):
 
     def new_maze(self,maze_pick):
         print(f"new_maze({maze_pick})")
-        maze_item = MAZE_PICK
-        if maze_item < len(maze_list):
-            if maze_pick < 0:
-                maze_item = random.randint(0,len(maze_list)-1)
-                print(f"random maze pick is {maze_item}")
-            self.lwidth = maze_list[maze_item][2]
+        if maze_pick < len(maze_list):
+            if maze_pick == MAZE_RANDOM:
+                self.maze_item = random.randint(0,len(maze_list)-1)
+                print(f"random maze pick is {self.maze_item}")
+            elif maze_pick == MAZE_SEQUENCE:
+                self.maze_item = (self.maze_item+1)%len(maze_list)
+                print(f"random maze pick is {self.maze_item}")
+            self.lwidth = maze_list[self.maze_item][2]
             self.cellsize = min(
-                SCREENWIDTH//maze_list[maze_item][0],
-                SCREENHEIGHT//maze_list[maze_item][1])
+                SCREENWIDTH//maze_list[self.maze_item][0],
+                SCREENHEIGHT//maze_list[self.maze_item][1])
             return MazeMaker(
-                maze_list[maze_item][0],
-                maze_list[maze_item][1]
+                maze_list[self.maze_item][0],
+                maze_list[self.maze_item][1]
             )
         return None
 
@@ -373,8 +383,8 @@ class MazeScreenSaver(Group):
                     lastcell = self.maze.mazesolution[1][0]
 
                     print(f"debug: start:{self.maze.startcell}")
-                    x1 = self.maze.getX(self.maze.startcell,self.maze.sizex)
-                    y1 = self.maze.getY(self.maze.startcell,self.maze.sizex)*self.cellsize+self.ycenter+(self.lwidth-self.lwidth//2)
+                    x1 = self.maze.getX(self.maze.startcell,self.maze.sizex)*self.cellsize+self.xcenter
+                    y1 = self.maze.getY(self.maze.startcell,self.maze.sizex)*self.cellsize+self.ycenter+(self.lwidth-self.lwidth//2)+1
                     x2 = x1 + self.cellsize-self.lwidth-1
                     y2 = y1 + self.cellsize-self.lwidth-2
                     print(f"debug start line at {lastcell} ({x1},{y1},{x2},{y2})")
@@ -407,8 +417,8 @@ class MazeScreenSaver(Group):
                                 #min(self.maze.height-(self.lwidth-self.lwidth//2)-4,y2),
                                 #x2-self.lwidth,
                                 #y2-self.lwidth,
-                                x2+self.xcenter+self.cellsize-self.lwidth,
-                                y2+self.ycenter+self.cellsize-self.lwidth,
+                                x2+self.xcenter+self.cellsize-(self.lwidth-self.lwidth//2)-1,
+                                y2+self.ycenter+self.cellsize-(self.lwidth-self.lwidth//2)-1,
                                 RED)
                         lastcell = cell[0]
 
