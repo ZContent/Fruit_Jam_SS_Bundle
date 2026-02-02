@@ -15,20 +15,16 @@ import bitmaptools
 
 import adafruit_imageload
 
-# 14 pixels per cell (easy)
-#MAZEX=22
-#MAZEY=17
-#LWIDTH=4
+# maze pick
+# pick a # from maze_list, or -1 for random pick
+MAZE_PICK = -1
 
-# 10 pixels per cell (medium)
-MAZEX=32
-MAZEY=24
-LWIDTH=3
-
-# 7 pixels per cell (hard)
-#MAZEX=45
-#MAZEY=34
-#LWIDTH=2
+# [columns,rows,wall width]
+maze_list = [
+    [22,17,4], # easy
+    [32,24,3], # medium
+    [45,34,2], # hard
+]
 
 SCREENWIDTH=320
 SCREENHEIGHT=240
@@ -42,7 +38,7 @@ GRAY = 1
 WHITE = 2
 RED = 3
 
-class maze:
+class MazeMaker:
     width = SCREENWIDTH
     height = SCREENHEIGHT
     counter = 0
@@ -52,15 +48,14 @@ class maze:
     mazepath = []
     mazesolution = []
 
-    def __init__(self):
-        #self.reset(10)
+
+    def __init__(self,columns,rows):
         #random.seed(42) # for debugging
-        pass
+        self.sizex = columns+1
+        self.sizey = rows+1
+        self.reset()
 
-    def reset(self,sizex,sizey):
-
-        self.sizex = sizex+1
-        self.sizey = sizey+1
+    def reset(self):
         self.mazepath.clear()
         self.maze.clear()
         self.mazesolution.clear()
@@ -139,46 +134,10 @@ class maze:
     """
     def generate(self):
         print("generate()")
-        self.reset(MAZEX,MAZEY)
+        self.reset()
         while not self.generate_tick(0.05):
             pass
         print("generate() done")
-
-    def generate_old(self):
-        print("generate()")
-        self.reset(MAZEX,MAZEY)
-        while True:
-            complete=True
-            # pick a random cell
-            cell = self.sizex + random.randint(0,self.sizex*(self.sizey-1))
-            # find the next cell that can be connected
-            for incr in range(self.sizex * self.sizey):
-
-                #checkcell=(incr+cell)%(self.sizex*(self.sizey-1))
-                checkcell=(incr+cell)%(self.sizex*(self.sizey))
-                if (checkcell < self.sizex) or ((checkcell%self.sizex)==0):
-                    continue
-                if self.connect(checkcell):
-                    complete = False
-                    break
-            if complete == True:
-                break
-        # break walls for start and end of maze, near center
-        # top to bottom
-        #self.startcell = self.sizex//4 + random.randint(0,self.sizex//2)
-        #self.maze[self.startcell] = self.maze[self.startcell]&~BOTTOM
-        #self.endcell = self.sizex//4 + random.randint(0,self.sizex//2) + self.sizex*(self.sizey-1)
-        #self.maze[self.endcell] = self.maze[self.endcell]&~BOTTOM
-        #left to right
-        self.startcell = (self.sizey//4 + random.randint(0,self.sizey//2))*self.sizex
-        self.mazesolution.append([self.startcell,3])
-        self.maze[self.startcell] = (self.maze[self.startcell])&~RIGHT
-        self.startcell += 1
-        print(f"**start cell: {self.startcell} {self.coord(self.startcell,self.sizex)}")
-        self.mazesolution.append([self.startcell,0])
-        self.endcell = (self.sizey//4 + random.randint(0,self.sizey//2))*self.sizex-1
-        print(f"**end cell: {self.endcell} {self.coord(self.endcell,self.sizex)}")
-        self.maze[self.endcell] = (self.maze[self.endcell])&~RIGHT
 
     def generate_tick(self,timer):
         #print("generate_tick()")
@@ -298,8 +257,7 @@ class MazeScreenSaver(Group):
     last_move_time = 0
     move_cooldown = .01  # seconds
     counter = 0
-    lwidth = LWIDTH
-    cellsize = min(SCREENWIDTH//MAZEX,SCREENHEIGHT//MAZEY)
+    lwidth = 2
     solved = False
     generated = False
     #time_before_solve = 5
@@ -312,7 +270,7 @@ class MazeScreenSaver(Group):
     def __init__(self):
         print("__init__")
         super().__init__()
-        self.maze = maze()
+        #self.maze = self.new_maze(-1)
         self.init_graphics()
         self.solved = False
 
@@ -330,29 +288,23 @@ class MazeScreenSaver(Group):
         bg_group = Group(scale=1)
         bg_group.append(bg_tg)
         self.append(bg_group)
-        #self.maze.generate()
-        #self.display_maze(self.maze)
-        #self.solve_countdown = self.time_before_solve
-        #self.solve()
 
-    def solve_old(self):
-        self.maze.mazesolution.clear()
-        self.maze.mazesolution.append([self.maze.startcell,3])
-        self.maze.mazesolution.append([self.maze.startcell,3])
-        count = 0
-        while self.maze.mazesolution[-1][0] != self.maze.endcell:
-            if self.maze.solve_tick():
-                self.draw_box(self.maze.mazesolution[-1][0],RED)
-                #print(f"add element {self.maze.mazesolution[-1]} (count:{len(self.maze.mazesolution)})")
-            else:
-                self.draw_box(self.maze.mazesolution[-1][0],GRAY)
-                element = self.maze.mazesolution.pop()
-                #print(f"popped element {element}  (count:{len(self.maze.mazesolution)})")
-
-            count += 1
-            if count > 10000:
-                print("maze solution out of range (bug?)")
-                sys.exit(1)
+    def new_maze(self,maze_pick):
+        print(f"new_maze({maze_pick})")
+        maze_item = MAZE_PICK
+        if maze_item < len(maze_list):
+            if maze_pick < 0:
+                maze_item = random.randint(0,len(maze_list)-1)
+                print(f"random maze pick is {maze_item}")
+            self.lwidth = maze_list[maze_item][2]
+            self.cellsize = min(
+                SCREENWIDTH//maze_list[maze_item][0],
+                SCREENHEIGHT//maze_list[maze_item][1])
+            return MazeMaker(
+                maze_list[maze_item][0],
+                maze_list[maze_item][1]
+            )
+        return None
 
     def tick(self):
         """
@@ -371,7 +323,7 @@ class MazeScreenSaver(Group):
             #print(f"tick mode:{self.mode}")
             print(".",end="")
             if self.mode == 1:
-                self.maze.reset(MAZEX,MAZEY)
+                self.maze = self.new_maze(MAZE_PICK)
                 self.mode = 2
                 print(f"tick mode:{self.mode}")
             if self.mode == 2:
