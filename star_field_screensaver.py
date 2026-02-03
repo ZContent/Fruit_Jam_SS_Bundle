@@ -10,22 +10,28 @@ import math
 import random
 
 from displayio import Group, OnDiskBitmap, TileGrid, Bitmap, Palette
+import bitmaptools
 
 import adafruit_imageload
 
-STARCOUNT = 200
-#STARCOUNT = 1
+STARCOUNT = 100
+# set True to show star streaks
+STREAK = True
+
 SCREENWIDTH=320
 SCREENHEIGHT=240
+
 class star:
     width = SCREENWIDTH
     height = SCREENHEIGHT
     x = width/2
     y = height/2
+    px = x
+    py = y
     velocity = 2
     acceleration = .1
     acceleration = .05
-    accellist = [.02,.05,.05,.05,.05,.05,.05,.05,.05,.1]
+    accellist = [.02,.02,.05,.05,.05,.05,.05,.05,.1,.15]
     angle = 30
     color = 0
     counter = 0
@@ -35,8 +41,8 @@ class star:
         self.reset()
 
     def reset(self):
-        self.x = self.oldx = 0
-        self.y = self.oldy = 0
+        self.x = self.px = 0
+        self.y = self.py = 0
         self.angle = random.randint(0,359)
         self.velocity = random.uniform(0,1.0)
         self.xvelocity = self.velocity * math.sin(math.radians(self.angle))
@@ -47,15 +53,24 @@ class star:
         #print(f"angle:{self.angle}, velocity:{self.xvelocity},{self.yvelocity}")
 
     def move(self):
-        if self.oldx < self.width/2 and self.oldy < self.height/2:
-            self.bmp[int(self.width/2 + self.oldx), int(self.height/2 + self.oldy)] = 0
-
+        if self.px < self.width/2 and self.py < self.height/2:
+            self.bmp[int(self.width//2 + self.x), int(self.height//2 + self.y)] = 0
+            if STREAK:
+                # erase streak line
+                bitmaptools.draw_line(self.bmp,
+                    int(self.width//2+self.px),int(self.height//2+self.py),
+                    int(self.width//2+self.x),int(self.height//2+self.y),0)
+            self.px = self.x
+            self.py = self.y
             self.x += self.xvelocity + (self.acceleration*(abs(self.x)))*math.sin(math.radians(self.angle))
             self.y += self.yvelocity + (self.acceleration*(abs(self.y)))*math.cos(math.radians(self.angle))
-            self.oldx = self.x
-            self.oldy = self.y
             if abs(self.x) < self.width/2 and abs(self.y) < self.height/2:
-                self.bmp[int(self.width/2 + self.x), int(self.height/2 + self.y)] = self.color
+                self.bmp[int(self.width//2 + self.x), int(self.height//2 + self.y)] = self.color
+                if STREAK:
+                # draw streak line
+                    bitmaptools.draw_line(self.bmp,
+                    int(self.width//2+self.px),int(self.height//2+self.py),
+                    int(self.width//2+self.x),int(self.height//2+self.y),self.color)
                 #print(self.x, self.y, int((self.x*self.x + self.y*self.y) /(self.height/2*self.height/2)*100))
                 #self.color = 0
                 #if abs(self.x) > 10 or abs(self.y) > 10:
@@ -74,7 +89,7 @@ class StarFieldScreenSaver(Group):
 
     display_size = (SCREENWIDTH, SCREENHEIGHT)
     last_move_time = 0
-    move_cooldown = 0.05  # seconds
+    move_cooldown = 0.01  # seconds
 
     def __init__(self):
         super().__init__()
