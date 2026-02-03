@@ -54,30 +54,26 @@ class star:
 
     def move(self):
         if self.px < self.width/2 and self.py < self.height/2:
-            self.bmp[int(self.width//2 + self.x), int(self.height//2 + self.y)] = 0
             if STREAK:
                 # erase streak line
                 bitmaptools.draw_line(self.bmp,
                     int(self.width//2+self.px),int(self.height//2+self.py),
                     int(self.width//2+self.x),int(self.height//2+self.y),0)
+            else:
+                self.bmp[int(self.width//2 + self.x), int(self.height//2 + self.y)] = 0
             self.px = self.x
             self.py = self.y
             self.x += self.xvelocity + (self.acceleration*(abs(self.x)))*math.sin(math.radians(self.angle))
             self.y += self.yvelocity + (self.acceleration*(abs(self.y)))*math.cos(math.radians(self.angle))
-            if abs(self.x) < self.width/2 and abs(self.y) < self.height/2:
-                self.bmp[int(self.width//2 + self.x), int(self.height//2 + self.y)] = self.color
+            if abs(self.px) < self.width/2 and abs(self.py) < self.height/2:
                 if STREAK:
                 # draw streak line
                     bitmaptools.draw_line(self.bmp,
                     int(self.width//2+self.px),int(self.height//2+self.py),
                     int(self.width//2+self.x),int(self.height//2+self.y),self.color)
-                #print(self.x, self.y, int((self.x*self.x + self.y*self.y) /(self.height/2*self.height/2)*100))
-                #self.color = 0
-                #if abs(self.x) > 10 or abs(self.y) > 10:
+                else:
+                    self.bmp[int(self.width//2 + self.x), int(self.height//2 + self.y)] = self.color
                 self.color = min(self.maxcolor,int((self.x*self.x + self.y*self.y) /(self.height/2*self.height/2)*self.maxcolor))
-                #print(self.color)
-                #if self.counter // 3 * 3 == self.counter:
-                #    self.color = min(self.color+1,self.maxcolor)
                 self.counter += 1
 
             else:
