@@ -19,12 +19,15 @@ MAZE_RANDOM = -1
 MAZE_SEQUENCE = -2
 
 """
- Pick a maze from the list
- pick a # from maze_list, or
- MAZE_RANDOM for random pick,
+ Pick a maze from the list by picking
+ a # from maze_list (starting at 0), or
+ use MAZE_RANDOM for random pick or
  MAZE_SEQUENCE for sequencial pick
 """
 MAZE_PICK = MAZE_SEQUENCE
+
+TIME_BEFORE_SOLVE = 2
+TIME_BEFORE_NEW_MAZE = 5
 
 # [columns,rows,wall width]
 maze_list = [
@@ -267,10 +270,10 @@ class MazeScreenSaver(Group):
     lwidth = 2
     solved = False
     generated = False
-    #time_before_solve = 5
-    #time_before_new_maze = 10
-    time_before_solve = 1
-    time_before_new_maze = 2
+    time_before_solve = TIME_BEFORE_SOLVE
+    time_before_new_maze = TIME_BEFORE_NEW_MAZE
+    #time_before_solve = 1
+    #time_before_new_maze = 2
     solve_countdown = 0
     mode = 1
 
@@ -382,8 +385,8 @@ class MazeScreenSaver(Group):
                     lastcell = self.maze.mazesolution[1][0]
 
                     print(f"debug: start:{self.maze.startcell}")
-                    x1 = self.maze.getX(self.maze.startcell,self.maze.sizex)*self.cellsize+self.xcenter
-                    y1 = self.maze.getY(self.maze.startcell,self.maze.sizex)*self.cellsize+self.ycenter+(self.lwidth-self.lwidth//2)+1
+                    x1 = self.maze.getX(self.maze.startcell,self.maze.sizex)*self.cellsize+self.xcenter+1
+                    y1 = self.maze.getY(self.maze.startcell,self.maze.sizex)*self.cellsize+self.ycenter+(self.lwidth//2)+1
                     x2 = x1 + self.cellsize-self.lwidth-1
                     y2 = y1 + self.cellsize-self.lwidth-2
                     print(f"debug start line at {lastcell} ({x1},{y1},{x2},{y2})")
@@ -406,7 +409,7 @@ class MazeScreenSaver(Group):
                                 y1 = y2
                                 y2 = t
 
-                            print(f"debug2 draw line from {lastcell} to {cell[0]} ({x1},{y1},{x2},{y2})")
+                            #print(f"debug2 draw line from {lastcell} to {cell[0]} ({x1},{y1},{x2},{y2})")
                             bitmaptools.fill_region(self.bmp,
                                 #x1+self.xcenter+(self.lwidth-self.lwidth//2)+0,
                                 x1+self.xcenter+(self.lwidth//2) + 1,
@@ -423,11 +426,6 @@ class MazeScreenSaver(Group):
 
                         count+=1
                     print(f"debug: end:{self.maze.endcell}")
-                    #x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.cellsize+self.xcenter+1
-                    #y1 = self.maze.getY(self.maze.endcell,self.maze.sizex)*self.cellsize+self.ycenter+1
-                    #x2 = min(x2 + self.cellsize,SCREENWIDTH)
-                    #y2 = y1 + self.cellsize-self.lwidth-2
-
                     x1 = self.maze.getX(self.maze.endcell,self.maze.sizex)*self.cellsize+self.xcenter+self.lwidth//2+1
                     y1 = self.maze.getY(self.maze.endcell,self.maze.sizex)*self.cellsize+self.ycenter+self.lwidth//2+1
                     x2 = x1+self.cellsize-self.lwidth
