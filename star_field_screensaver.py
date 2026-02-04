@@ -1,5 +1,6 @@
 """
-Starfield Screensaver
+Starfield Screensaver for the Adafruit Fruit Jam
+and Fruit Jam OS
 Dan Cogliano, https://DanTheGeek.com
 """
 
