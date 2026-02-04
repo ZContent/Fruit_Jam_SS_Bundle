@@ -13,4 +13,20 @@ or the default display of the maze sizes in order (**MAZE_SEQUENCE**). The harde
 For the star field screensaver, you can specify whether are not to show the star streaks by modifying the **STREAK** line near the top of the file to "True" or "False". You can also modify the number of stars to display with the **STARCOUNT** line, 
 however, the more stars you have the slower the performance will be.
 
-These screen savers were written by Dan Cogliano. You will find more information about Dan and his projects at [DanTheGeek.com](https://DanTheGeek.com). 
+## Installation
+
+It is always best to install the latest version of [CircuitPython](https://CircuitPython.org)You will first need to install the [Fruit Jam OS](https://learn.adafruit.com/fruit-jam-os) for the Adafruit Fruit Jam. This will also include the libraries needed by the Screensaver Bundle, so no additional libraries are needed.
+
+Copy the screensaver files in this folder to the "/apps/screensavers" folder on the Fruit Jam. Run the Screensaver app on the Fruit Jam OS to choose one of the screensavers. 
+Refer to the Fruit Jam OS learn guide for how to configure the screensaver manually.
+
+## Related Links
+
+- [Adafruit Fruit Jam Learn Guide](https://learn.adafruit.com/adafruit-fruit-jam) - The credit card sized microcomputer used to run these screensavers
+- [Fruit Jam OS Learn Guide](https://learn.adafruit.com/fruit-jam-os) - Required for running the Screensaver Bundle
+- [ePaper Maze Maker Learn Guide](https://learn.adafruit.com/epaper-maze-maker) - A maze making program written by the same author written for Arduino in C++ using an ePaper display
+
+---
+These screen savers were written by Dan Cogliano. You will find more information about Dan and his projects at [DanTheGeek.com](https://DanTheGeek.com).
+Other Fruit Jam apps written by Dan include the [CPZ Machine](https://danthegeek.com/cpz-machine/), a Zork/Z Machine port to the Fruit Jam, and the retro-styled [Moon Miner](https://danthegeek.com/moon-miner/) arcade game.
+
