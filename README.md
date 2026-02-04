@@ -15,7 +15,7 @@ however, the more stars you have the slower the performance will be.
 
 ## Installation
 
-It is always best to install the latest version of [CircuitPython](https://CircuitPython.org)You will first need to install the [Fruit Jam OS](https://learn.adafruit.com/fruit-jam-os) for the Adafruit Fruit Jam. This will also include the libraries needed by the Screensaver Bundle, so no additional libraries are needed.
+It is always best to install the latest version of [CircuitPython](https://CircuitPython.org). You will first need to install the [Fruit Jam OS](https://learn.adafruit.com/fruit-jam-os) for the Adafruit Fruit Jam. This will also include the libraries needed by the Screensaver Bundle, so no additional libraries are needed.
 
 Copy the screensaver files in this folder to the "/apps/screensavers" folder on the Fruit Jam. Run the Screensaver app on the Fruit Jam OS to choose one of the screensavers. 
 Refer to the Fruit Jam OS learn guide for how to configure the screensaver manually.
