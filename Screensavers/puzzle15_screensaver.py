@@ -157,7 +157,7 @@ class Puzzle15ScreenSaver(Group):
     tiles = []
     atiles = []
     last_move_time = 0
-    move_cooldown = .1  # seconds
+    move_cooldown = .05  # seconds
     pos = 0
     move = 0
     moves = [12,0,3,15] #, 13,5,7,15]
@@ -225,8 +225,8 @@ class Puzzle15ScreenSaver(Group):
         #    xlen = self.group[self.changed[0]].x - self.group[self.changed[1]].x
         #    ylen = self.group[self.changed[0]].y - self.group[self.changed[1]].y
 
-        xdelta = self.xlen//8
-        ydelta = self.ylen//8
+        xdelta = self.xlen//4
+        ydelta = self.ylen//4
         print(f"animate distances:({self.xlen},{self.ylen}), deltas:({xdelta},{ydelta})")
         # move now
 
@@ -234,7 +234,6 @@ class Puzzle15ScreenSaver(Group):
         self.ymove += ydelta
         self.animate_frame +=1
         if abs(self.xmove) > abs(self.xlen) or abs(self.ymove) > abs(self.ylen):
-        #if self.animate_frame >= 8:
             self.animate_frame = 0
             print("animation complete")
             return False
@@ -308,6 +307,7 @@ class Puzzle15ScreenSaver(Group):
                     self.xlen = self.group[self.changed[0]].x - self.group[self.changed[1]].x
                     self.ylen = self.group[self.changed[0]].y - self.group[self.changed[1]].y
 
+                print(f"debug xlen:{self.xlen}, ylen:{self.ylen}")
                 # ensure starting and ending blocks are hidden
                 self.group[self.oldpos].hidden = True
                 self.group[self.newpos].hidden = True
