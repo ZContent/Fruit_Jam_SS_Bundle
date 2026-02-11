@@ -168,6 +168,7 @@ class Puzzle15ScreenSaver(Group):
 
     def __init__(self):
         super().__init__()
+        os.chdir("/".join(__file__.split("/")[:-1])+"/ssbundle_assets/15puzzle")
         self.init_graphics()
         self.puzzle = Puzzle15()
         #self.get_screensnapshot()
@@ -191,7 +192,7 @@ class Puzzle15ScreenSaver(Group):
     def load_image(self):
         #"""
         bitmap, bpal = adafruit_imageload.load(
-            "/apps/Screensavers/blinka.bmp",
+            "blinka.bmp",
             bitmap=displayio.Bitmap,
             palette=displayio.Palette
             )
