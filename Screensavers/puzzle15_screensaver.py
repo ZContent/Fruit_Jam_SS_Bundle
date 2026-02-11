@@ -160,7 +160,7 @@ class Puzzle15ScreenSaver(Group):
     move_cooldown = .1  # seconds
     pos = 0
     move = 0
-    moves = [12,0,3,15]
+    moves = [12,0,3,15] #, 13,5,7,15]
     group = []
     agroup = []
     animate_frame = 0
@@ -178,7 +178,7 @@ class Puzzle15ScreenSaver(Group):
         self.bmp = Bitmap(self.screenwidth, self.screenheight, SCREENDEPTH)
         bg_palette = Palette(2)
         bg_palette[0] = 0x000000
-        bg_palette[1] = 0x004400
+        bg_palette[1] = 0x666666
         bg_tg = TileGrid(bitmap=self.bmp, pixel_shader=bg_palette)
         self.bmp.fill(1)
         bg_group = Group(scale=1)
@@ -191,7 +191,7 @@ class Puzzle15ScreenSaver(Group):
     def load_image(self):
         #"""
         bitmap, bpal = adafruit_imageload.load(
-            "/apps/Screensavers/adafruit-logo.bmp",
+            "/apps/Screensavers/blinka.bmp",
             bitmap=displayio.Bitmap,
             palette=displayio.Palette
             )
@@ -228,16 +228,21 @@ class Puzzle15ScreenSaver(Group):
         ydelta = self.ylen//8
         print(f"animate distances:({self.xlen},{self.ylen}), deltas:({xdelta},{ydelta})")
         # move now
-        for pos in range(3):
-            self.agroup[pos].x += xdelta
-            self.agroup[pos].y += ydelta
-            print(f"debug move tile {pos} to ({self.agroup[pos].x},{self.agroup[pos].y})")
-            #time.sleep(.5)
+
+        self.xmove += xdelta
+        self.ymove += ydelta
         self.animate_frame +=1
-        if self.animate_frame >= 8:
+        if abs(self.xmove) > abs(self.xlen) or abs(self.ymove) > abs(self.ylen):
+        #if self.animate_frame >= 8:
             self.animate_frame = 0
             print("animation complete")
             return False
+        else:
+            for pos in range(3):
+                self.agroup[pos].x += xdelta
+                self.agroup[pos].y += ydelta
+                print(f"debug move tile {pos} to ({self.agroup[pos].x},{self.agroup[pos].y})")
+                #time.sleep(.5)
 
         return True
 
@@ -282,7 +287,7 @@ class Puzzle15ScreenSaver(Group):
                         self.changed.append(i)
                 # initial positions
                 pos = 0
-                for i in range(4):
+                for i in range(len(self.changed)):
                     if self.puzzle.grid[self.changed[i]] >= 0:
 
                         #self.atiles[pos][0] = self.tiles[changed[i]][0]
@@ -302,8 +307,12 @@ class Puzzle15ScreenSaver(Group):
                     self.xlen = self.group[self.changed[0]].x - self.group[self.changed[1]].x
                     self.ylen = self.group[self.changed[0]].y - self.group[self.changed[1]].y
 
+                # ensure starting and ending blocks are hidden
+                self.group[self.oldpos].hidden = True
+                self.group[self.newpos].hidden = True
+
                 # set starting pos
-                for pos in range(3):
+                for pos in range(len(self.changed)-1):
                     if self.xlen > 0:
                         self.agroup[pos].x -= self.tile_width
                     elif self.xlen < 0:
@@ -312,7 +321,8 @@ class Puzzle15ScreenSaver(Group):
                         self.agroup[pos].y -= self.tile_height
                     elif self.ylen < 0:
                         self.agroup[pos].y += self.tile_height
-
+                self.xmove = 0
+                self.ymove = 0
                 self.animating = True
                 #self.update_puzzle()
                 self.move+=1
