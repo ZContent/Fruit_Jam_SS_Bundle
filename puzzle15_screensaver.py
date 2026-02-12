@@ -19,15 +19,16 @@ SCREENWIDTH = 320
 SCREENHEIGHT = 240
 SCREENDEPTH = 8
 
-#animation speed (fast to slow)
+#animation speed (slow to fast)
 #1,2,4,5,10,20
-ASPEED = 20
+ASPEED = 5
+
+#start pause in ticks
+STARTPAUSE=20
 
 from displayio import Group, OnDiskBitmap, TileGrid, Bitmap, Palette
 import bitmaptools
 
-#import supervisor
-#display = supervisor.runtime.display
 class Puzzle15():
     def getX(self,num):
         return num%4
@@ -80,7 +81,7 @@ class Puzzle15():
                 index = hcheck.index(num)
                 print(f"h index: {index}")
                 if num < self.pos:
-                    # slide right to left
+                    # slide left to right
                     last = self.grid[hcheck[index]]
                     self.grid[hcheck[index]] = -1
                     for i in range(index+1,4):
@@ -89,10 +90,11 @@ class Puzzle15():
                         last = tmp
                     self.pos = num
                 else:
-                    # slide left to right
-                    last = self.grid[hcheck[0]]
-                    self.grid[hcheck[0]] = -1
-                    for i in range(index,-1,-1):
+                    # slide right to left
+                    last = self.grid[hcheck[index]]
+                    self.grid[hcheck[index]] = -1
+                    for i in range(index-1,self.getX(self.pos)-1,-1):
+                        print(f"i:{i}")
                         tmp = self.grid[hcheck[i]]
                         self.grid[hcheck[i]] = last
                         last = tmp
@@ -113,9 +115,9 @@ class Puzzle15():
                     self.pos = num
                 else:
                     #slide bottom to top
-                    last = self.grid[vcheck[0]]
-                    self.grid[vcheck[0]] = -1
-                    for i in range(index,-1,-1):
+                    last = self.grid[vcheck[index]]
+                    self.grid[vcheck[index]] = -1
+                    for i in range(index-1,self.getY(self.pos)-1,-1):
                         tmp = self.grid[vcheck[i]]
                         self.grid[vcheck[i]] = last
                         last = tmp
@@ -169,12 +171,14 @@ class Puzzle15ScreenSaver(Group):
     move_cooldown = .05  # seconds
     pos = 0
     move = 0
-    moves = [12,0,3,15]
+    #moves = [12,0,3,15]
     moves = [13,5,7,15]
+    #moves = [13,5,7,15, 12,0,3,15]
     group = []
     agroup = []
     animate_frame = 0
     animating = False
+    startcount = 0
 
     def __init__(self):
         super().__init__()
@@ -198,6 +202,7 @@ class Puzzle15ScreenSaver(Group):
         self.append(bg_group)
         print(f"display size: {self.display_size}")
         print("debug end init_graphics")
+        self.startcount = STARTPAUSE
 
     def load_image(self):
         #"""
@@ -226,22 +231,20 @@ class Puzzle15ScreenSaver(Group):
         #print(f"changed positions: {self.changed}")
         # calculate move distances
         #print(f"debug: oldpos {self.oldpos} to newpos {self.newpos}")
-        #if self.group[changed[0]] != -1:
-        #if self.oldpos > self.newpos:
-        #    xlen = self.group[self.changed[1]].x - self.group[self.changed[0]].x
-        #    ylen = self.group[self.changed[1]].y - self.group[self.changed[0]].y
-        #else:
-        #    xlen = self.group[self.changed[0]].x - self.group[self.changed[1]].x
-        #    ylen = self.group[self.changed[0]].y - self.group[self.changed[1]].y
 
-        xdelta = self.xlen//ASPEED
-        ydelta = self.ylen//ASPEED
+        xdelta = min(ASPEED,abs(self.xlen))
+        ydelta = min(ASPEED,abs(self.ylen))
+        if self.xlen < 0:
+            xdelta = 0 - xdelta
+        if self.ylen < 0:
+            ydelta = 0 - ydelta
         #print(f"animate distances:({self.xlen},{self.ylen}), deltas:({xdelta},{ydelta})")
         # move now
         self.xmove += xdelta
         self.ymove += ydelta
         self.animate_frame +=1
         if abs(self.xmove) > abs(self.xlen) or abs(self.ymove) > abs(self.ylen):
+            #print(f"debug move: x:{self.xmove}/{self.xlen}, y:{self.ymove}/{self.ylen}")
             self.animate_frame = 0
             print("animation complete")
             return False
@@ -265,7 +268,7 @@ class Puzzle15ScreenSaver(Group):
         for i in range(16):
             self.group[i].x = (self.screenwidth//4)*(i%4)
             self.group[i].y = (self.screenheight//4)*(i//4)
-            print(f"tile coords: ({i}){self.group[i].x},{self.group[i].y}: {self.puzzle.grid[i]}")
+            #print(f"tile coords: ({i}){self.group[i].x},{self.group[i].y}: {self.puzzle.grid[i]}")
             if self.puzzle.grid[i] != -1:
                 self.tiles[i][0] = self.puzzle.grid[i]
                 self.group[i].hidden = False
@@ -279,10 +282,13 @@ class Puzzle15ScreenSaver(Group):
         if now - self.last_move_time > self.move_cooldown:
             self.last_move_time = now
             print("***tick***")
-            if self.animating:
+            if self.startcount > 0:
+                self.update_puzzle()
+                self.startcount-= 1
+                return True
+            elif self.animating:
                 self.animating = self.animate_move()
             else:
-
                 self.update_puzzle()
                 before = self.puzzle.grid[:]
                 self.oldpos = self.puzzle.pos
