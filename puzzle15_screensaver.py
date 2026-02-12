@@ -3,7 +3,6 @@
 and Fruit Jam OSDan Cogliano, https://DanTheGeek.com
 """
 
-#import supervisor
 from adafruit_fruitjam.peripherals import request_display_config, get_display_config
 import adafruit_imageload
 
@@ -14,14 +13,21 @@ import random
 import time
 import math
 import random
+import gc
 
 SCREENWIDTH = 320
 SCREENHEIGHT = 240
 SCREENDEPTH = 8
 
+#animation speed (fast to slow)
+#1,2,4,5,10,20
+ASPEED = 20
+
 from displayio import Group, OnDiskBitmap, TileGrid, Bitmap, Palette
 import bitmaptools
 
+#import supervisor
+#display = supervisor.runtime.display
 class Puzzle15():
     def getX(self,num):
         return num%4
@@ -46,6 +52,7 @@ class Puzzle15():
     # num: puzzle position (0-15)
     # num has a tile
     def move(self,num):
+        print(f"move({num})")
         print("before:")
         self.print_puzzle()
         num = num%16
@@ -69,25 +76,46 @@ class Puzzle15():
             ]
             print(f"num: {num}, blank square at {self.pos}")
             print(f"hcheck: {hcheck}, vcheck: {vcheck}")
-            if self.grid[num] in hcheck:
+            if self.pos in hcheck:
                 index = hcheck.index(num)
                 print(f"h index: {index}")
                 last = self.grid[hcheck[0]]
                 self.grid[hcheck[0]] = -1
-                for i in range(index+1,4):
-                    tmp = self.grid[hcheck[i]]
-                    self.grid[hcheck[i]] = last
-                    last = tmp
-            elif self.grid[num] in vcheck:
+                if num < self.pos:
+                    # slide right to left
+                    for i in range(index+1,4):
+                        tmp = self.grid[hcheck[i]]
+                        self.grid[hcheck[i]] = last
+                        last = tmp
+                    self.pos = num
+                else:
+                    # slide left to right
+                    for i in range(index,-1,-1):
+                        tmp = self.grid[hcheck[i]]
+                        self.grid[hcheck[i]] = last
+                        last = tmp
+                    self.pos = num
+
+            elif self.pos in vcheck:
                 index = vcheck.index(num)
                 print(f"v index: {index}")
 
                 last = self.grid[vcheck[0]]
                 self.grid[vcheck[0]] = -1
-                for i in range(index+1,4):
-                    tmp = self.grid[vcheck[i]]
-                    self.grid[vcheck[i]] = last
-                    last = tmp
+                if num < self.pos:
+                    #slide top to bottom
+                    for i in range(index+1,4):
+                        tmp = self.grid[vcheck[i]]
+                        self.grid[vcheck[i]] = last
+                        last = tmp
+                    self.pos = num
+                else:
+                    #slide bottom to top
+                    for i in range(index,-1,-1):
+                        tmp = self.grid[vcheck[i]]
+                        self.grid[vcheck[i]] = last
+                        last = tmp
+                    self.pos = num
 
         print("after:")
         self.print_puzzle()
@@ -132,14 +160,21 @@ class Puzzle15ScreenSaver(Group):
     tile_height = screenheight//4
     #display_size = (screenwidth, screenheight)
     tiles = []
+    atiles = []
     last_move_time = 0
-    move_cooldown = 5  # seconds
+    move_cooldown = .05  # seconds
     pos = 0
     move = 0
     moves = [12,0,3,15]
+    #moves = [13,5,7,15]
+    group = []
+    agroup = []
+    animate_frame = 0
+    animating = False
 
     def __init__(self):
         super().__init__()
+        os.chdir("/".join(__file__.split("/")[:-1])+"/ssbundle_assets/15puzzle")
         self.init_graphics()
         self.puzzle = Puzzle15()
         #self.get_screensnapshot()
@@ -150,7 +185,7 @@ class Puzzle15ScreenSaver(Group):
         self.bmp = Bitmap(self.screenwidth, self.screenheight, SCREENDEPTH)
         bg_palette = Palette(2)
         bg_palette[0] = 0x000000
-        bg_palette[1] = 0x004400
+        bg_palette[1] = 0x666666
         bg_tg = TileGrid(bitmap=self.bmp, pixel_shader=bg_palette)
         self.bmp.fill(1)
         bg_group = Group(scale=1)
@@ -163,37 +198,140 @@ class Puzzle15ScreenSaver(Group):
     def load_image(self):
         #"""
         bitmap, bpal = adafruit_imageload.load(
-            "/apps/Screensavers/adafruit-logo.bmp",
+            "blinka.bmp",
             bitmap=displayio.Bitmap,
             palette=displayio.Palette
             )
         #"""
         self.group = Group(scale=1)
+        self.agroup = Group(scale=1)
+        # puzzle tiles here
         for i in range(16):
             self.tiles.append(TileGrid(bitmap,pixel_shader=bpal,width=1,height=1,
                 tile_width=self.tile_width,tile_height=self.tile_height))
-
             self.group.append(self.tiles[-1])
         self.append(self.group)
+        # animation tiles here
+        for i in range(3):
+            self.atiles.append(TileGrid(bitmap,pixel_shader=bpal,width=1,height=1,
+                tile_width=self.tile_width,tile_height=self.tile_height))
+            self.agroup.append(self.atiles[-1])
+        self.append(self.agroup)
+
+    def animate_move(self):
+        #print(f"changed positions: {self.changed}")
+        # calculate move distances
+        #print(f"debug: oldpos {self.oldpos} to newpos {self.newpos}")
+        #if self.group[changed[0]] != -1:
+        #if self.oldpos > self.newpos:
+        #    xlen = self.group[self.changed[1]].x - self.group[self.changed[0]].x
+        #    ylen = self.group[self.changed[1]].y - self.group[self.changed[0]].y
+        #else:
+        #    xlen = self.group[self.changed[0]].x - self.group[self.changed[1]].x
+        #    ylen = self.group[self.changed[0]].y - self.group[self.changed[1]].y
+
+        xdelta = self.xlen//ASPEED
+        ydelta = self.ylen//ASPEED
+        #print(f"animate distances:({self.xlen},{self.ylen}), deltas:({xdelta},{ydelta})")
+        # move now
+        self.xmove += xdelta
+        self.ymove += ydelta
+        self.animate_frame +=1
+        if abs(self.xmove) > abs(self.xlen) or abs(self.ymove) > abs(self.ylen):
+            self.animate_frame = 0
+            print("animation complete")
+            return False
+        else:
+            atilecount = max(abs(self.puzzle.getX(self.oldpos) - self.puzzle.getX(self.newpos)),
+            abs(self.puzzle.getY(self.oldpos) - self.puzzle.getY(self.newpos)))
+
+            for pos in range(atilecount):
+                self.agroup[pos].x += xdelta
+                self.agroup[pos].y += ydelta
+                #print(f"debug move tile {pos} to ({self.agroup[pos].x},{self.agroup[pos].y})")
+
+        return True
+
+        # turn off animation tiles
+        #for i in range(len(self.agroup)):
+        #    self.agroup[i].hidden = True
+
+
+    def update_puzzle(self):
+        for i in range(16):
+            self.group[i].x = (self.screenwidth//4)*(i%4)
+            self.group[i].y = (self.screenheight//4)*(i//4)
+            print(f"tile coords: ({i}){self.group[i].x},{self.group[i].y}: {self.puzzle.grid[i]}")
+            if self.puzzle.grid[i] != -1:
+                self.tiles[i][0] = self.puzzle.grid[i]
+                self.group[i].hidden = False
+            else:
+                self.tiles[i][0] == None
+                self.group[i].hidden = True
 
     def tick(self):
         #print("debug tick")
         now = time.monotonic()
         if now - self.last_move_time > self.move_cooldown:
             self.last_move_time = now
-            print("tick")
-            for i in range(16):
-                self.group[i].x = (self.screenwidth//4)*(i%4)
-                self.group[i].y = (self.screenheight//4)*(i//4)
-                print(f"tile coords: ({i}){self.group[i].x},{self.group[i].y}: {self.puzzle.grid[i]}")
-                if self.puzzle.grid[i] != -1:
-                    self.tiles[i][0] = self.puzzle.grid[i]
-                    self.group[i].hidden = False
-                else:
-                    self.tiles[i][0] == None
-                    self.group[i].hidden = True
-            self.puzzle.move(self.moves[self.move%len(self.moves)])
-            self.move+=1
-            return True
+            print("***tick***")
+            if self.animating:
+                self.animating = self.animate_move()
+            else:
 
+                self.update_puzzle()
+                before = self.puzzle.grid[:]
+                self.oldpos = self.puzzle.pos
+                self.puzzle.move(self.moves[self.move%len(self.moves)])
+                self.newpos = self.puzzle.pos
+                after = self.puzzle.grid[:]
+                #get ready for animation
+                self.changed = []
+                #find changed positions
+                for i in range(16):
+                    if before[i] != after[i]:
+                        self.changed.append(i)
+                # initial positions
+                pos = 0
+                for i in range(len(self.changed)):
+                    if self.puzzle.grid[self.changed[i]] >= 0:
+
+                        #self.atiles[pos][0] = self.tiles[changed[i]][0]
+                        print(f"debug: set anim tile {pos} to {self.changed[i]}/{self.puzzle.grid[self.changed[i]]}")
+                        self.atiles[pos][0] = self.puzzle.grid[self.changed[i]]
+                        #self.agroup[pos] = self.group[changed[i]]
+                        self.agroup[pos].x = self.group[self.changed[i]].x
+                        self.agroup[pos].y = self.group[self.changed[i]].y
+                        self.agroup[pos].hidden = False
+                        print(f"agroup {pos} set to ({self.agroup[pos].x},{self.agroup[pos].y})")
+                        pos+=1
+
+                if self.oldpos > self.newpos:
+                    self.xlen = self.group[self.changed[1]].x - self.group[self.changed[0]].x
+                    self.ylen = self.group[self.changed[1]].y - self.group[self.changed[0]].y
+                else:
+                    self.xlen = self.group[self.changed[0]].x - self.group[self.changed[1]].x
+                    self.ylen = self.group[self.changed[0]].y - self.group[self.changed[1]].y
+
+                print(f"debug xlen:{self.xlen}, ylen:{self.ylen}")
+                # ensure starting and ending blocks are hidden
+                self.group[self.oldpos].hidden = True
+                self.group[self.newpos].hidden = True
+
+                # set starting pos
+                for pos in range(len(self.changed)-1):
+                    if self.xlen > 0:
+                        self.agroup[pos].x -= self.tile_width
+                    elif self.xlen < 0:
+                        self.agroup[pos].x += self.tile_width
+                    if self.ylen > 0:
+                        self.agroup[pos].y -= self.tile_height
+                    elif self.ylen < 0:
+                        self.agroup[pos].y += self.tile_height
+                self.xmove = 0
+                self.ymove = 0
+                self.animating = True
+                #self.update_puzzle()
+                self.move+=1
+            return True
         return False
