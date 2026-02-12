@@ -79,10 +79,10 @@ class Puzzle15():
             if self.pos in hcheck:
                 index = hcheck.index(num)
                 print(f"h index: {index}")
-                last = self.grid[hcheck[0]]
-                self.grid[hcheck[0]] = -1
                 if num < self.pos:
                     # slide right to left
+                    last = self.grid[hcheck[index]]
+                    self.grid[hcheck[index]] = -1
                     for i in range(index+1,4):
                         tmp = self.grid[hcheck[i]]
                         self.grid[hcheck[i]] = last
@@ -90,6 +90,8 @@ class Puzzle15():
                     self.pos = num
                 else:
                     # slide left to right
+                    last = self.grid[hcheck[0]]
+                    self.grid[hcheck[0]] = -1
                     for i in range(index,-1,-1):
                         tmp = self.grid[hcheck[i]]
                         self.grid[hcheck[i]] = last
@@ -100,10 +102,10 @@ class Puzzle15():
                 index = vcheck.index(num)
                 print(f"v index: {index}")
 
-                last = self.grid[vcheck[0]]
-                self.grid[vcheck[0]] = -1
                 if num < self.pos:
                     #slide top to bottom
+                    last = self.grid[vcheck[index]]
+                    self.grid[vcheck[index]] = -1
                     for i in range(index+1,4):
                         tmp = self.grid[vcheck[i]]
                         self.grid[vcheck[i]] = last
@@ -111,6 +113,8 @@ class Puzzle15():
                     self.pos = num
                 else:
                     #slide bottom to top
+                    last = self.grid[vcheck[0]]
+                    self.grid[vcheck[0]] = -1
                     for i in range(index,-1,-1):
                         tmp = self.grid[vcheck[i]]
                         self.grid[vcheck[i]] = last
@@ -166,7 +170,7 @@ class Puzzle15ScreenSaver(Group):
     pos = 0
     move = 0
     moves = [12,0,3,15]
-    #moves = [13,5,7,15]
+    moves = [13,5,7,15]
     group = []
     agroup = []
     animate_frame = 0
