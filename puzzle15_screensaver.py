@@ -42,7 +42,8 @@ class Puzzle15():
     def __init__(self):
         self.grid = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,-1]
         self.pos = len(self.grid)-1
-        self.lastmove = 0 # 1: horizontal, 1: vertical
+        self.lastmove = self.pos # last tile picked
+        self.hvtoggle = 0
 
     def print_puzzle(self):
         for i in range(16):
@@ -80,10 +81,10 @@ class Puzzle15():
             if self.pos in hcheck:
                 index = hcheck.index(num)
                 print(f"h index: {index}")
+                last = self.grid[hcheck[index]]
+                self.grid[hcheck[index]] = -1
                 if num < self.pos:
                     # slide left to right
-                    last = self.grid[hcheck[index]]
-                    self.grid[hcheck[index]] = -1
                     for i in range(index+1,4):
                         tmp = self.grid[hcheck[i]]
                         self.grid[hcheck[i]] = last
@@ -91,8 +92,6 @@ class Puzzle15():
                     self.pos = num
                 else:
                     # slide right to left
-                    last = self.grid[hcheck[index]]
-                    self.grid[hcheck[index]] = -1
                     for i in range(index-1,self.getX(self.pos)-1,-1):
                         print(f"i:{i}")
                         tmp = self.grid[hcheck[i]]
@@ -103,20 +102,17 @@ class Puzzle15():
             elif self.pos in vcheck:
                 index = vcheck.index(num)
                 print(f"v index: {index}")
-
+                last = self.grid[vcheck[index]]
+                self.grid[vcheck[index]] = -1
                 if num < self.pos:
-                    #slide top to bottom
-                    last = self.grid[vcheck[index]]
-                    self.grid[vcheck[index]] = -1
+                    #slide bottom to top
                     for i in range(index+1,4):
                         tmp = self.grid[vcheck[i]]
                         self.grid[vcheck[i]] = last
                         last = tmp
                     self.pos = num
                 else:
-                    #slide bottom to top
-                    last = self.grid[vcheck[index]]
-                    self.grid[vcheck[index]] = -1
+                    #slide top to bottom
                     for i in range(index-1,self.getY(self.pos)-1,-1):
                         tmp = self.grid[vcheck[i]]
                         self.grid[vcheck[i]] = last
@@ -127,11 +123,11 @@ class Puzzle15():
         self.print_puzzle()
 
     def random_move(self):
-        x = self.getX(self.lastmove)
-        y = self.getY(self.lastmove)
+        x = self.getX(self.pos)
+        y = self.getY(self.pos)
         check = []
         move = -1
-        if lastmove == 1: #last vertical, now horizontal
+        if self.hvtoggle == 0: #last vertical, now horizontal
             check = [
                 self.toNum(0,y),
                 self.toNum(1,y),
@@ -145,12 +141,13 @@ class Puzzle15():
                 self.toNum(x,2),
                 self.toNum(x,3)
             ]
+        print(f"random check:{check}")
         while True:
             move = random.randint(0,3)
-            if move != self.pos:
+            if check[move] != self.pos:
                 break
-        lastmove = (lastmove+1)%2
-        # move affected squares (future)
+        self.hvtoggle = (self.hvtoggle+1)%2
+        return check[move]
 
 class Puzzle15ScreenSaver(Group):
 
@@ -292,7 +289,10 @@ class Puzzle15ScreenSaver(Group):
                 self.update_puzzle()
                 before = self.puzzle.grid[:]
                 self.oldpos = self.puzzle.pos
-                self.puzzle.move(self.moves[self.move%len(self.moves)])
+                move = self.moves[self.move%len(self.moves)]
+                #move = self.puzzle.random_move()
+                #print(f"random move:{move}")
+                self.puzzle.move(move)
                 self.newpos = self.puzzle.pos
                 after = self.puzzle.grid[:]
                 #get ready for animation
