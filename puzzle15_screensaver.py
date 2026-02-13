@@ -172,8 +172,8 @@ class Puzzle15ScreenSaver(Group):
     pos = 0
     move = 0
     #moves = [12,0,3,15]
-    moves = [13,5,7,15]
-    #moves = [13,5,7,15, 12,0,3,15]
+    #moves = [13,5,7,15]
+    moves = [13,5,7,15, 12,0,3,15]
     group = []
     agroup = []
     animate_frame = 0
@@ -302,6 +302,8 @@ class Puzzle15ScreenSaver(Group):
                     if before[i] != after[i]:
                         self.changed.append(i)
                 # initial positions
+                for i in range(len(self.agroup)):
+                    self.agroup[i].hidden = True
                 pos = 0
                 for i in range(len(self.changed)):
                     if self.puzzle.grid[self.changed[i]] >= 0:
