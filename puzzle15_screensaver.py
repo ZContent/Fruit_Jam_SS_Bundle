@@ -21,7 +21,7 @@ SCREENDEPTH = 8
 
 #animation speed (slow to fast)
 #1,2,4,5,10,20
-ASPEED = 5
+ASPEED = 10
 
 #start pause in ticks
 STARTPAUSE=20
@@ -85,14 +85,14 @@ class Puzzle15():
                 self.grid[hcheck[index]] = -1
                 if num < self.pos:
                     # slide left to right
-                    for i in range(index+1,4):
+                    for i in range(index+1,hcheck.index(self.pos)+1):
                         tmp = self.grid[hcheck[i]]
                         self.grid[hcheck[i]] = last
                         last = tmp
                     self.pos = num
                 else:
                     # slide right to left
-                    for i in range(index-1,self.getX(self.pos)-1,-1):
+                    for i in range(index-1,hcheck.index(self.pos)-1,-1):
                         print(f"i:{i}")
                         tmp = self.grid[hcheck[i]]
                         self.grid[hcheck[i]] = last
@@ -106,14 +106,16 @@ class Puzzle15():
                 self.grid[vcheck[index]] = -1
                 if num < self.pos:
                     #slide bottom to top
-                    for i in range(index+1,4):
+
+                    #for i in range(index+1,4):
+                    for i in range(index+1,vcheck.index(self.pos)+1):
                         tmp = self.grid[vcheck[i]]
                         self.grid[vcheck[i]] = last
                         last = tmp
                     self.pos = num
                 else:
                     #slide top to bottom
-                    for i in range(index-1,self.getY(self.pos)-1,-1):
+                    for i in range(index-1,vcheck.index(self.pos)-1,-1):
                         tmp = self.grid[vcheck[i]]
                         self.grid[vcheck[i]] = last
                         last = tmp
@@ -171,6 +173,8 @@ class Puzzle15ScreenSaver(Group):
     #moves = [12,0,3,15]
     #moves = [13,5,7,15]
     moves = [13,5,7,15, 12,0,3,15]
+    movelist = [15]
+    movedir = 1
     group = []
     agroup = []
     animate_frame = 0
@@ -289,9 +293,23 @@ class Puzzle15ScreenSaver(Group):
                 self.update_puzzle()
                 before = self.puzzle.grid[:]
                 self.oldpos = self.puzzle.pos
-                move = self.moves[self.move%len(self.moves)]
-                #move = self.puzzle.random_move()
-                #print(f"random move:{move}")
+                move = 0
+                if self.movedir > 0:
+                    #move = self.moves[self.move%len(self.moves)]
+                    move = self.puzzle.random_move()
+                    self.movelist.append(move)
+                else:
+                    #undo moves
+                    move = self.movelist.pop()
+                if len(self.movelist) > 25:
+                    self.movelist.pop()
+                    self.movedir = -1
+                    self.puzzle.move(move)
+                elif len(self.movelist) == 0:
+                    self.movedir = 1
+                    self.movelist.append(15)
+                    self.puzzle.move(move)
+                print(f"move list: {self.movelist}")
                 self.puzzle.move(move)
                 self.newpos = self.puzzle.pos
                 after = self.puzzle.grid[:]
