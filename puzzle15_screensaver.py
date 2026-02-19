@@ -14,6 +14,7 @@ import time
 import math
 import random
 import gc
+import sys
 
 SCREENWIDTH = 320
 SCREENHEIGHT = 240
@@ -23,8 +24,11 @@ SCREENDEPTH = 8
 #1,2,4,5,10,20
 ASPEED = 10
 
-#start pause in ticks
+#pause at start of game in ticks
 STARTPAUSE=20
+
+# number of moves
+MOVECOUNT=25
 
 from displayio import Group, OnDiskBitmap, TileGrid, Bitmap, Palette
 import bitmaptools
@@ -40,7 +44,8 @@ class Puzzle15():
         return y*4+x
 
     def __init__(self):
-        self.grid = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,-1]
+        self.startgrid = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,-1]
+        self.grid = self.startgrid[:]
         self.pos = len(self.grid)-1
         self.lastmove = self.pos # last tile picked
         self.hvtoggle = 0
@@ -51,6 +56,10 @@ class Puzzle15():
                 print()
             print(f"{self.grid[i]:02d} ",end="")
         print()
+
+    def is_solved(self):
+        return self.grid == self.startgrid
+
     # num: puzzle position (0-15)
     # num has a tile
     def move(self,num):
@@ -180,6 +189,7 @@ class Puzzle15ScreenSaver(Group):
     animate_frame = 0
     animating = False
     startcount = 0
+    new_puzzle = True
 
     def __init__(self):
         super().__init__()
@@ -187,7 +197,13 @@ class Puzzle15ScreenSaver(Group):
         self.init_graphics()
         self.puzzle = Puzzle15()
         #self.get_screensnapshot()
-        self.load_image()
+        self.filelist= self.get_filelist()
+        self.currentfile = 0
+        if len(self.filelist) > 0:
+            self.load_image(self.filelist[self.currentfile])
+        else:
+            print("no image files found")
+            sys.exit()
 
     def init_graphics(self):
         print("debug init_graphics")
@@ -205,10 +221,20 @@ class Puzzle15ScreenSaver(Group):
         print("debug end init_graphics")
         self.startcount = STARTPAUSE
 
-    def load_image(self):
+    def get_filelist(self):
+        try:
+            files = os.listdir("")
+            image_files = [f for f in files if f.lower().endswith(('.bmp', '.BMP'))]
+            image_files = sorted(image_files)
+            return image_files
+        except Exception as e:
+            print(f"Error getting stories: {e}")
+            return []
+
+    def load_image(self,file_name):
         #"""
         bitmap, bpal = adafruit_imageload.load(
-            "blinka.bmp",
+            file_name,
             bitmap=displayio.Bitmap,
             palette=displayio.Palette
             )
@@ -283,14 +309,29 @@ class Puzzle15ScreenSaver(Group):
         if now - self.last_move_time > self.move_cooldown:
             self.last_move_time = now
             print("***tick***")
+            #if self.new_puzzle:
+            #    self.currentfile = (self.currentfile+1)%len(self.filelist)
+            #    self.load_image(self.filelist[self.currentfile])
+            #    self.update_puzzle()
+            #    self.new_puzzle = False
+            #    return
             if self.startcount > 0:
                 self.update_puzzle()
                 self.startcount-= 1
+                #if self.startcount == 0 and self.new_puzzle:
+                #    self.currentfile = (self.currentfile+1)%len(self.filelist)
+                #    self.load_image(self.filelist[self.currentfile])
+                #    self.update_puzzle()
                 return True
             elif self.animating:
                 self.animating = self.animate_move()
             else:
                 self.update_puzzle()
+                if self.puzzle.is_solved() and not self.new_puzzle:
+                    self.new_puzzle = True
+                    self.startcount = STARTPAUSE
+                    print("puzzle completed")
+                    return
                 before = self.puzzle.grid[:]
                 self.oldpos = self.puzzle.pos
                 move = 0
@@ -298,10 +339,11 @@ class Puzzle15ScreenSaver(Group):
                     #move = self.moves[self.move%len(self.moves)]
                     move = self.puzzle.random_move()
                     self.movelist.append(move)
+                    self.new_puzzle = False
                 else:
                     #undo moves
                     move = self.movelist.pop()
-                if len(self.movelist) > 25:
+                if len(self.movelist) > MOVECOUNT:
                     self.movelist.pop()
                     self.movedir = -1
                     self.puzzle.move(move)
@@ -363,5 +405,6 @@ class Puzzle15ScreenSaver(Group):
                 self.animating = True
                 #self.update_puzzle()
                 self.move+=1
+
             return True
         return False
