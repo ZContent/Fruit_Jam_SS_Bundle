@@ -198,10 +198,11 @@ class Puzzle15ScreenSaver(Group):
         self.puzzle = Puzzle15()
         #self.get_screensnapshot()
         self.filelist= self.get_filelist()
-        self.currentfile = 0
         if len(self.filelist) == 0:
             print("no image files found")
             sys.exit()
+        self.currentfile = 0
+        self.currentfile = random.randint(0,len(self.filelist)-1)
 
     def init_graphics(self):
         print("debug init_graphics")
