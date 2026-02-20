@@ -199,9 +199,7 @@ class Puzzle15ScreenSaver(Group):
         #self.get_screensnapshot()
         self.filelist= self.get_filelist()
         self.currentfile = 0
-        if len(self.filelist) > 0:
-            self.load_image(self.filelist[self.currentfile])
-        else:
+        if len(self.filelist) == 0:
             print("no image files found")
             sys.exit()
 
@@ -232,22 +230,29 @@ class Puzzle15ScreenSaver(Group):
             return []
 
     def load_image(self,file_name):
-        #"""
+        print(f"**load_image:{file_name}")
         bitmap, bpal = adafruit_imageload.load(
             file_name,
             bitmap=displayio.Bitmap,
             palette=displayio.Palette
             )
-        #"""
+        self.puzzle = Puzzle15()
+        self.movelist = [15]
+        self.movedir = 1
+        self.animating = False
         self.group = Group(scale=1)
         self.agroup = Group(scale=1)
         # puzzle tiles here
+        self.tiles.clear() # clear previous puzzle
+        while len(self) > 1:
+            self.pop()
         for i in range(16):
             self.tiles.append(TileGrid(bitmap,pixel_shader=bpal,width=1,height=1,
                 tile_width=self.tile_width,tile_height=self.tile_height))
             self.group.append(self.tiles[-1])
         self.append(self.group)
         # animation tiles here
+        self.atiles.clear() # clear previous animation
         for i in range(3):
             self.atiles.append(TileGrid(bitmap,pixel_shader=bpal,width=1,height=1,
                 tile_width=self.tile_width,tile_height=self.tile_height))
@@ -306,6 +311,16 @@ class Puzzle15ScreenSaver(Group):
     def tick(self):
         #print("debug tick")
         now = time.monotonic()
+        if now - self.last_move_time > 2:
+            #screen saver just kicked in, start new puzzle
+            self.last_move_time = now
+            print("***new image***")
+            self.load_image(self.filelist[self.currentfile])
+            self.currentfile = (self.currentfile+1)%len(self.filelist)
+            self.start_count = STARTPAUSE
+            self.new_puzzle = False
+            self.update_puzzle()
+            return True
         if now - self.last_move_time > self.move_cooldown:
             self.last_move_time = now
             print("***tick***")
