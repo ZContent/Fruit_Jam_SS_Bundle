@@ -28,7 +28,7 @@ ASPEED = 10
 STARTPAUSE=20
 
 # number of moves
-MOVECOUNT=25
+MOVECOUNT=41
 
 from displayio import Group, OnDiskBitmap, TileGrid, Bitmap, Palette
 import bitmaptools
@@ -218,7 +218,7 @@ class Puzzle15ScreenSaver(Group):
         self.append(bg_group)
         print(f"display size: {self.display_size}")
         print("debug end init_graphics")
-        self.startcount = STARTPAUSE
+        self.startcount = 0
 
     def get_filelist(self):
         try:
@@ -315,9 +315,14 @@ class Puzzle15ScreenSaver(Group):
         if now - self.last_move_time > 2:
             #screen saver just kicked in, start new puzzle
             self.last_move_time = now
-            print("***new image***")
             self.load_image(self.filelist[self.currentfile])
-            self.currentfile = (self.currentfile+1)%len(self.filelist)
+            while True:
+                newp=random.randint(0,len(self.filelist)-1) #display images randomly
+                if newp != self.currentfile:
+                    self.currentfile = newp
+                    break
+            self.currentfile = newp
+            #self.currentfile = self.currentfile+1)%len(self.filelist): #display images in sequence
             self.start_count = STARTPAUSE
             self.new_puzzle = False
             self.update_puzzle()
@@ -383,15 +388,12 @@ class Puzzle15ScreenSaver(Group):
                 pos = 0
                 for i in range(len(self.changed)):
                     if self.puzzle.grid[self.changed[i]] >= 0:
-
-                        #self.atiles[pos][0] = self.tiles[changed[i]][0]
-                        print(f"debug: set anim tile {pos} to {self.changed[i]}/{self.puzzle.grid[self.changed[i]]}")
+                        #print(f"debug: set anim tile {pos} to {self.changed[i]}/{self.puzzle.grid[self.changed[i]]}")
                         self.atiles[pos][0] = self.puzzle.grid[self.changed[i]]
-                        #self.agroup[pos] = self.group[changed[i]]
                         self.agroup[pos].x = self.group[self.changed[i]].x
                         self.agroup[pos].y = self.group[self.changed[i]].y
                         self.agroup[pos].hidden = False
-                        print(f"agroup {pos} set to ({self.agroup[pos].x},{self.agroup[pos].y})")
+                        #print(f"agroup {pos} set to ({self.agroup[pos].x},{self.agroup[pos].y})")
                         pos+=1
 
                 if self.oldpos > self.newpos:
