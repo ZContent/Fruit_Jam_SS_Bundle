@@ -1,11 +1,14 @@
 # The Fruit Jam Screensaver Bundle
 
 This repository is a collection of screensavers for the Adafruit [Fruit Jam OS](https://learn.adafruit.com/fruit-jam-os), an operating system running on the Fruit Jam by [Adafruit](https://adafruit.com). It is a credit-card-sized, RP2350-powered mini computer designed for retro emulation and other fun projects.
-This bundle currently contains 2 screensavers. Visit us again to see if we have added more!
+This bundle contains 3 screensavers. Visit again to see if we have added more!
 
 The screensavers included in this bundle are:
+* 15 Puzzle - Images are split into sliding tiles in a 4x4 grid
 * Maze - A screensaver that creates random mazes and then solves them.
 * Star Field - a screen of moving stars reminiscent of a famous 1960s SciFi TV show.
+
+For the 15 puzzle, a different image is chosen each time the screensaver is activated, then converted into tiles and slid within a 4x4 grid like the classic toy. With the default settings, the tiles slide randomly for about 1 minute before resolving to the initial starting position, and then started again. Several images are included, but you can add your own to the ssbundle_assets/15puzzle folder, which should be 320 pixels width and 240 pixels height and 256 colors.
 
 For the maze screensaver, 3 different size mazes are created, from easy to hard. You can change this behavior by modifying the **MAZE_PICK** line near the top of the file. You can change it to a specific size maze (0-2), random choice (**MAZE_RANDOM**),
 or the default display of the maze sizes in order (**MAZE_SEQUENCE**). The harder the maze, the longer it takes to generate the maze and solve it, so you will see a blank screen at the start when the first maze is being created.
