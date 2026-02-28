@@ -15,6 +15,9 @@ import terminalio
 import sys
 
 from adafruit_display_text import label
+from adafruit_bitmap_font import bitmap_font
+import bitmaptools
+
 from os import getenv
 
 import adafruit_connection_manager
@@ -55,9 +58,27 @@ class WeatherClockScreenSaver(Group):
 
     last_move_time = 0
     move_cooldown = .05
+    last_weather_check = 0
 
+    weather_codes = {
+        0: "B",
+        1: "B", 2: "H", 3: "N",
+        45: "L", 48: "L",
+        51: "Q", 53: "Q", 55: "R",
+        56: "X", 57: "X",
+        61: "Q", 63: "R", 65: "R",
+        66: "X", 67: "X",
+        71: "U", 73: "W", 75: "W",
+        77: "U",
+        80: "Q", 81: "R", 82: "R",
+        85: "U", 86: "W",
+        95: "P"
+
+    }
     def __init__(self):
         super().__init__()
+        os.chdir("/".join(__file__.split("/")[:-1]))
+
         self.init_wifi()
         self.init_graphics()
 
@@ -104,16 +125,21 @@ class WeatherClockScreenSaver(Group):
         bg_palette[0] = 0x000000
         bg_palette[1] = 0x333333
         self.bmp.fill(0)
-        self.temp_label = label.Label(terminalio.FONT, text=f'---', color=0xFFFFFF, x=10, y=10)
-        city_label = label.Label(terminalio.FONT, text=f'{CITY}', color=0xFFFFFF, x=10, y=30)
+        font24 = bitmap_font.load_font("ssbundle_assets/fonts/Baloo-24.bdf")
+        self.bb24 = font24.get_bounding_box()
+        weatherfont = bitmap_font.load_font("ssbundle_assets/fonts/meteocons-48.bdf")
+        self.temp_label = label.Label(font24, text=f'---', color=0xFFFFFF, x=10, y=10)
+        city_label = label.Label(font24, text=f'{CITY}', color=0xFFFFFF, x=10, y=50)
+        self.icon_label = label.Label(weatherfont, text=f')', color=0xFFFFFF, x=10, y=120)
         #weather_label = label.Label(terminalio.FONT, text=f'Weather: {weather_description}', color=0xFFFFFF, x=10, y=40)
 
         bg_tg = TileGrid(bitmap=self.bmp, pixel_shader=bg_palette)
         self.bmp.fill(0)
-        display_group = Group(scale=2)
+        display_group = Group(scale=1)
         display_group.append(bg_tg)
         display_group.append(self.temp_label)
         display_group.append(city_label)
+        display_group.append(self.icon_label)
         self.append(display_group)
         print(f"display size: {self.display_size}")
         print("debug end init_graphics")
@@ -159,8 +185,10 @@ class WeatherClockScreenSaver(Group):
         current_weather = weather_data['current']
         temperature = self.temperature_text(current_weather['temperature_2m'])  # Get the temperature
         weather_description = current_weather['weather_code']  # Weather code for description
-        print(f"t: {temperature}, desc: {weather_description}")
+        print(f"debug1: {current_weather['weather_code']}")
+        print(f"debug2: {self.weather_codes[current_weather['weather_code']]}")
         self.temp_label.text = temperature
+        self.icon_label.text = self.weather_codes[current_weather['weather_code']]
 
     def tick(self):
         now = time.monotonic()
@@ -168,10 +196,11 @@ class WeatherClockScreenSaver(Group):
         if now - self.last_move_time > self.move_cooldown:
             self.last_move_time = now
             print("***tick***")
-            data = self.get_weather()
-            print(data)
-            self.update_display(data)
-            time.sleep(600)
+            if now - self.last_weather_check > 600 or self.last_weather_check == 0: # 10 minutes
+                self.last_weather_check = now
+                data = self.get_weather()
+                print(data)
+                self.update_display(data)
             return True
         return False
 
