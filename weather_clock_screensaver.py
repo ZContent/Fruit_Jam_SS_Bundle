@@ -5,6 +5,7 @@ and Fruit Jam OSDan Cogliano, https://DanTheGeek.com
 
 from displayio import Group, TileGrid, Bitmap, Palette
 import adafruit_imageload
+import adafruit_ntp
 
 import supervisor
 import displayio
@@ -27,8 +28,8 @@ from digitalio import DigitalInOut
 
 from adafruit_esp32spi import adafruit_esp32spi
 
-SCREENWIDTH = 640
-SCREENHEIGHT = 480
+SCREENWIDTH = 320
+SCREENHEIGHT = 240
 SCREENDEPTH = 8
 
 # Open-Meteo API URL for weather data
@@ -59,6 +60,7 @@ class WeatherClockScreenSaver(Group):
     last_move_time = 0
     move_cooldown = .05
     last_weather_check = 0
+    last_time_check = 0
 
     weather_codes = {
         0: "B",
@@ -97,9 +99,9 @@ class WeatherClockScreenSaver(Group):
         spi = board.SPI()
         esp = adafruit_esp32spi.ESP_SPIcontrol(spi, esp32_cs, esp32_ready, esp32_reset)
 
-        pool = adafruit_connection_manager.get_radio_socketpool(esp)
+        self.pool = adafruit_connection_manager.get_radio_socketpool(esp)
         ssl_context = adafruit_connection_manager.get_radio_ssl_context(esp)
-        self.requests = adafruit_requests.Session(pool, ssl_context)
+        self.requests = adafruit_requests.Session(self.pool, ssl_context)
 
         if esp.status == adafruit_esp32spi.WL_IDLE_STATUS:
             print("ESP32 found and in idle mode")
@@ -120,31 +122,38 @@ class WeatherClockScreenSaver(Group):
 
     def init_graphics(self):
         print("debug init_graphics")
-        self.bmp = Bitmap(self.screenwidth, self.screenheight, SCREENDEPTH)
-        bg_palette = Palette(2)
-        bg_palette[0] = 0x000000
-        bg_palette[1] = 0x333333
-        self.bmp.fill(0)
         font24 = bitmap_font.load_font("ssbundle_assets/fonts/Baloo-24.bdf")
-        self.bb24 = font24.get_bounding_box()
         weatherfont = bitmap_font.load_font("ssbundle_assets/fonts/meteocons-48.bdf")
-        self.temp_label = label.Label(font24, text=f'---', color=0xFFFFFF, x=10, y=10)
-        city_label = label.Label(font24, text=f'{CITY}', color=0xFFFFFF, x=10, y=50)
-        self.icon_label = label.Label(weatherfont, text=f')', color=0xFFFFFF, x=10, y=120)
-        #weather_label = label.Label(terminalio.FONT, text=f'Weather: {weather_description}', color=0xFFFFFF, x=10, y=40)
+        font48 = bitmap_font.load_font("ssbundle_assets/fonts/Baloo-48.bdf")
+        font12 = bitmap_font.load_font("ssbundle_assets/fonts/Baloo-12.bdf")
+        self.temp_label = label.Label(font24, text='', color=0xFFFFFF, x=10, y=40)
+        self.date_label = label.Label(font12, text='', color=0xFFFFFF, x=10, y=180)
+        self.icon_label = label.Label(weatherfont, text='', color=0xFFFFFF, x=SCREENWIDTH, y=40)
+        self.clockpos = [150,100]
+        self.hour_label = label.Label(font48,text="00", color=0xFFFFFF, x=self.clockpos[0]-90, y=self.clockpos[1])
+        self.sep_label = label.Label(font48,text=":", color=0xFFFFFF, x=self.clockpos[0], y=self.clockpos[1])
+        self.min_label = label.Label(font48,text="00", color=0xFFFFFF, x=self.clockpos[0]+20, y=self.clockpos[1])
+        self.ampm_label = label.Label(font12,text="", color=0xFFFFFF, x=self.clockpos[0]+100, y=self.clockpos[1])
 
+        self.bmp, bg_palette = adafruit_imageload.load(
+                    "ssbundle_assets/weatherclock/blue_gradient.bmp",
+                    bitmap=displayio.Bitmap,
+                    palette=displayio.Palette
+                    )
         bg_tg = TileGrid(bitmap=self.bmp, pixel_shader=bg_palette)
-        self.bmp.fill(0)
         display_group = Group(scale=1)
         display_group.append(bg_tg)
         display_group.append(self.temp_label)
-        display_group.append(city_label)
+        display_group.append(self.date_label)
         display_group.append(self.icon_label)
+        display_group.append(self.hour_label)
+        display_group.append(self.min_label)
+        display_group.append(self.sep_label)
+        display_group.append(self.ampm_label)
         self.append(display_group)
         print(f"display size: {self.display_size}")
         print("debug end init_graphics")
         self.startcount = 0
-
 
     def temperature_text(self,tempC):
         if METRIC:
@@ -176,11 +185,14 @@ class WeatherClockScreenSaver(Group):
         response = self.requests.get(URL)
         json = response.json()
         print("response json:",json)
+        tz_offset = json["utc_offset_seconds"] // 3600
+        print("tz_offset:",tz_offset)
+        self.ntp = adafruit_ntp.NTP(self.pool, tz_offset=tz_offset, cache_seconds=3600)
         response.close()
         return json
 
     # Function to update display with weather data
-    def update_display(self,weather_data):
+    def update_weather(self,weather_data):
         display = supervisor.runtime.display
         current_weather = weather_data['current']
         temperature = self.temperature_text(current_weather['temperature_2m'])  # Get the temperature
@@ -189,6 +201,49 @@ class WeatherClockScreenSaver(Group):
         print(f"debug2: {self.weather_codes[current_weather['weather_code']]}")
         self.temp_label.text = temperature
         self.icon_label.text = self.weather_codes[current_weather['weather_code']]
+
+    def update_clock(self):
+        months = {
+            1: "January",
+            2: "February",
+            3: "March",
+            4: "April",
+            5: "May",
+            6: "June",
+            7: "July",
+            8: "August",
+            9: "September",
+            10: "October",
+            11: "November",
+            12: "December"
+        }
+        print(self.ntp.datetime)
+        hour = self.ntp.datetime.tm_hour
+        min = self.ntp.datetime.tm_min
+        is_dst = self.ntp.datetime.tm_isdst
+        mon = self.ntp.datetime.tm_mon
+        day = self.ntp.datetime.tm_mday
+        year = self.ntp.datetime.tm_year
+        if hour < 12:
+            is_pm = False
+        else:
+            is_pm = True
+        hour = hour%12
+        if hour == 0:
+            hour = 12
+        print(f"{hour}:{min}")
+        if is_pm:
+            self.ampm_label.text = "pm"
+        else:
+            self.ampm_label.text = "am"
+        self.hour_label.text = f"{hour:2d}"
+        self.min_label.text = f"{min:02d}"
+        self.hour_label.x = self.clockpos[0] - self.hour_label.width
+        self.icon_label.x = SCREENWIDTH - 10 - self.icon_label.width
+        self.date_label.hidden = True
+        self.date_label.text = f"{months[mon]} {day}, {year}"
+        self.date_label.x = (SCREENWIDTH - self.date_label.width) // 2
+        self.date_label.hidden = False
 
     def tick(self):
         now = time.monotonic()
@@ -200,7 +255,10 @@ class WeatherClockScreenSaver(Group):
                 self.last_weather_check = now
                 data = self.get_weather()
                 print(data)
-                self.update_display(data)
+                self.update_weather(data)
+            if now - self.last_time_check >= 1 or self.last_time_check == 0:
+                self.last_time_check = now
+                self.update_clock()
             return True
         return False
 
