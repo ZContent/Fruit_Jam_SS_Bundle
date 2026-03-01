@@ -51,6 +51,9 @@ TMZ = "America/New_York"
 METRIC = False
 CITY = "Annapolis, MD"
 
+TEXTCOLOR = 0xBBBBFF
+ICONCOLOR = 0x8888FF
+
 class WeatherClockScreenSaver(Group):
 
     display_size = [SCREENWIDTH,SCREENHEIGHT]
@@ -123,17 +126,17 @@ class WeatherClockScreenSaver(Group):
     def init_graphics(self):
         print("debug init_graphics")
         font24 = bitmap_font.load_font("ssbundle_assets/fonts/Baloo-24.bdf")
-        weatherfont = bitmap_font.load_font("ssbundle_assets/fonts/meteocons-48.bdf")
-        font48 = bitmap_font.load_font("ssbundle_assets/fonts/Baloo-48.bdf")
+        weatherfont = bitmap_font.load_font("ssbundle_assets/fonts/meteocons-90.bdf")
+        font48 = bitmap_font.load_font("ssbundle_assets/fonts/Baloo-num-48.bdf")
         font12 = bitmap_font.load_font("ssbundle_assets/fonts/Baloo-12.bdf")
-        self.temp_label = label.Label(font24, text='', color=0xFFFFFF, x=10, y=40)
-        self.date_label = label.Label(font12, text='', color=0xFFFFFF, x=10, y=180)
-        self.icon_label = label.Label(weatherfont, text='', color=0xFFFFFF, x=SCREENWIDTH, y=40)
+        self.temp_label = label.Label(font12, text='', color=TEXTCOLOR, x=10, y=20)
+        self.date_label = label.Label(font12, text='', color=TEXTCOLOR, x=10, y=180)
+        self.icon_label = label.Label(weatherfont, text='', color=ICONCOLOR, x=10, y=90)
         self.clockpos = [150,100]
-        self.hour_label = label.Label(font48,text="00", color=0xFFFFFF, x=self.clockpos[0]-90, y=self.clockpos[1])
-        self.sep_label = label.Label(font48,text=":", color=0xFFFFFF, x=self.clockpos[0], y=self.clockpos[1])
-        self.min_label = label.Label(font48,text="00", color=0xFFFFFF, x=self.clockpos[0]+20, y=self.clockpos[1])
-        self.ampm_label = label.Label(font12,text="", color=0xFFFFFF, x=self.clockpos[0]+100, y=self.clockpos[1])
+        self.hour_label = label.Label(font48,text="00", color=TEXTCOLOR, x=self.clockpos[0]-90, y=self.clockpos[1])
+        self.sep_label = label.Label(font48,text=":", color=TEXTCOLOR, x=self.clockpos[0], y=self.clockpos[1])
+        self.min_label = label.Label(font48,text="00", color=TEXTCOLOR, x=self.clockpos[0]+20, y=self.clockpos[1])
+        self.ampm_label = label.Label(font12,text="", color=TEXTCOLOR, x=self.clockpos[0]+100, y=self.clockpos[1])
 
         self.bmp, bg_palette = adafruit_imageload.load(
                     "ssbundle_assets/weatherclock/blue_gradient.bmp",
@@ -157,9 +160,9 @@ class WeatherClockScreenSaver(Group):
 
     def temperature_text(self,tempC):
         if METRIC:
-            return "{:3.0f}°C".format(tempC)
+            return "{:3.0f}°".format(tempC)
         else:
-            return "{:3.0f}°F".format(32.0 + 1.8 * tempC)
+            return "{:3.0f}°".format(32.0 + 1.8 * tempC)
 
     # Function to fetch weather data
     def get_weather(self):
@@ -200,6 +203,7 @@ class WeatherClockScreenSaver(Group):
         print(f"debug1: {current_weather['weather_code']}")
         print(f"debug2: {self.weather_codes[current_weather['weather_code']]}")
         self.temp_label.text = temperature
+        self.temp_label.x = SCREENWIDTH - 10 - self.temp_label.width
         self.icon_label.text = self.weather_codes[current_weather['weather_code']]
 
     def update_clock(self):
@@ -217,40 +221,44 @@ class WeatherClockScreenSaver(Group):
             11: "November",
             12: "December"
         }
-        print(self.ntp.datetime)
-        hour = self.ntp.datetime.tm_hour
-        min = self.ntp.datetime.tm_min
-        is_dst = self.ntp.datetime.tm_isdst
-        mon = self.ntp.datetime.tm_mon
-        day = self.ntp.datetime.tm_mday
-        year = self.ntp.datetime.tm_year
-        if hour < 12:
-            is_pm = False
-        else:
-            is_pm = True
-        hour = hour%12
-        if hour == 0:
-            hour = 12
-        print(f"{hour}:{min}")
-        if is_pm:
-            self.ampm_label.text = "pm"
-        else:
-            self.ampm_label.text = "am"
-        self.hour_label.text = f"{hour:2d}"
-        self.min_label.text = f"{min:02d}"
-        self.hour_label.x = self.clockpos[0] - self.hour_label.width
-        self.icon_label.x = SCREENWIDTH - 10 - self.icon_label.width
-        self.date_label.hidden = True
-        self.date_label.text = f"{months[mon]} {day}, {year}"
-        self.date_label.x = (SCREENWIDTH - self.date_label.width) // 2
-        self.date_label.hidden = False
+        try:
+            print(self.ntp.datetime)
+            hour = self.ntp.datetime.tm_hour
+            min = self.ntp.datetime.tm_min
+            is_dst = self.ntp.datetime.tm_isdst
+            mon = self.ntp.datetime.tm_mon
+            day = self.ntp.datetime.tm_mday
+            year = self.ntp.datetime.tm_year
+            if hour < 12:
+                is_pm = False
+            else:
+                is_pm = True
+            hour = hour%12
+            if hour == 0:
+                hour = 12
+            print(f"{hour}:{min}")
+            if is_pm:
+                self.ampm_label.text = "pm"
+            else:
+                self.ampm_label.text = "am"
+            self.hour_label.text = f"{hour:2d}"
+            self.min_label.text = f"{min:02d}"
+            self.hour_label.x = self.clockpos[0] - self.hour_label.width
+            #self.icon_label.x = SCREENWIDTH - 10 - self.icon_label.width
+            self.date_label.hidden = True
+            self.date_label.text = f"{months[mon]} {day}, {year}"
+            self.date_label.x = (SCREENWIDTH - self.date_label.width) // 2
+            self.date_label.hidden = False
+        except OSError as e:
+            print(f"Network error: {e}, restarting connection")
+            self.init_wifi()
 
     def tick(self):
         now = time.monotonic()
 
         if now - self.last_move_time > self.move_cooldown:
             self.last_move_time = now
-            print("***tick***")
+            #print("***tick***")
             if now - self.last_weather_check > 600 or self.last_weather_check == 0: # 10 minutes
                 self.last_weather_check = now
                 data = self.get_weather()
