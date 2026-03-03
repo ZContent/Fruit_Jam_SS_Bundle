@@ -38,21 +38,21 @@ API_URL = "https://api.open-meteo.com/v1/forecast"
 # User-defined settings
 
 # New York City
-LATITUDE = "40.7128"
-LONGITUDE = "74.0060"
-TMZ = "America/New_York"
-METRIC = False
-CITY = "New York, NY"
+#LATITUDE = "40.7128"
+#LONGITUDE = "-74.0060"
+#TMZ = "America/New_York"
+#METRIC = False
+#CITY = "New York, NY"
 
 # Annapolis
 LATITUDE = 38.9764
-LONGITUDE = 76.4896
+LONGITUDE = -76.4896
 TMZ = "America/New_York"
 METRIC = False
 CITY = "Annapolis, MD"
 
-TEXTCOLOR = 0xBBBBFF
-ICONCOLOR = 0x8888FF
+TEXTCOLOR = 0xCCCCFF
+ICONCOLOR = 0x7777FF
 
 class WeatherClockScreenSaver(Group):
 
@@ -64,8 +64,9 @@ class WeatherClockScreenSaver(Group):
     move_cooldown = .05
     last_weather_check = 0
     last_time_check = 0
+    daytime = True
 
-    weather_codes = {
+    day_outline_weather_codes = {
         0: "B",
         1: "B", 2: "H", 3: "N",
         45: "L", 48: "L",
@@ -78,8 +79,53 @@ class WeatherClockScreenSaver(Group):
         80: "Q", 81: "R", 82: "R",
         85: "U", 86: "W",
         95: "P"
-
     }
+
+    night_outline_weather_codes = {
+        0: "C",
+        1: "C", 2: "I", 3: "N",
+        45: "L", 48: "L",
+        51: "Q", 53: "Q", 55: "R",
+        56: "X", 57: "X",
+        61: "Q", 63: "R", 65: "R",
+        66: "X", 67: "X",
+        71: "U", 73: "W", 75: "W",
+        77: "U",
+        80: "Q", 81: "R", 82: "R",
+        85: "U", 86: "W",
+        95: "P"
+    }
+
+    day_fill_weather_codes = {
+        0: "1",
+        1: "1", 2: "3", 3: "5",
+        45: "L", 48: "L",
+        51: "7", 53: "7", 55: "8",
+        56: "X", 57: "X",
+        61: "7", 63: "8", 65: "8",
+        66: "%", 67: "%",
+        71: "\"", 73: "#", 75: "#",
+        77: "\"",
+        80: "7", 81: "8", 82: "8",
+        85: "\"", 86: "#",
+        95: "6"
+    }
+
+    night_fill_weather_codes = {
+        0: "2",
+        1: "2", 2: "4", 3: "5",
+        45: "L", 48: "L",
+        51: "7", 53: "7", 55: "8",
+        56: "X", 57: "X",
+        61: "7", 63: "8", 65: "8",
+        66: "%", 67: "%",
+        71: "\"", 73: "#", 75: "#",
+        77: "\"",
+        80: "7", 81: "8", 82: "8",
+        85: "\"", 86: "#",
+        95: "6"
+    }
+
     def __init__(self):
         super().__init__()
         os.chdir("/".join(__file__.split("/")[:-1]))
@@ -90,9 +136,6 @@ class WeatherClockScreenSaver(Group):
     def init_wifi(self):
         print("init_wifi()")
 
-        # Get wifi details and more from a settings.toml file
-        ssid = getenv("CIRCUITPY_WIFI_SSID")
-        password = getenv("CIRCUITPY_WIFI_PASSWORD")
 
         # If you are using a board with pre-defined ESP32 Pins:
         esp32_cs = DigitalInOut(board.ESP_CS)
@@ -100,28 +143,34 @@ class WeatherClockScreenSaver(Group):
         esp32_reset = DigitalInOut(board.ESP_RESET)
 
         spi = board.SPI()
-        esp = adafruit_esp32spi.ESP_SPIcontrol(spi, esp32_cs, esp32_ready, esp32_reset)
+        self.esp = adafruit_esp32spi.ESP_SPIcontrol(spi, esp32_cs, esp32_ready, esp32_reset)
 
-        self.pool = adafruit_connection_manager.get_radio_socketpool(esp)
-        ssl_context = adafruit_connection_manager.get_radio_ssl_context(esp)
+        self.pool = adafruit_connection_manager.get_radio_socketpool(self.esp)
+        ssl_context = adafruit_connection_manager.get_radio_ssl_context(self.esp)
         self.requests = adafruit_requests.Session(self.pool, ssl_context)
 
-        if esp.status == adafruit_esp32spi.WL_IDLE_STATUS:
+        if self.esp.status == adafruit_esp32spi.WL_IDLE_STATUS:
             print("ESP32 found and in idle mode")
-        print("Firmware vers.", esp.firmware_version)
-        print("MAC addr:", ":".join("%02X" % byte for byte in esp.MAC_address))
-        for ap in esp.scan_networks():
+        print("Firmware vers.", self.esp.firmware_version)
+        print("MAC addr:", ":".join("%02X" % byte for byte in self.esp.MAC_address))
+        for ap in self.esp.scan_networks():
             print("\t%-23s RSSI: %d" % (ap.ssid, ap.rssi))
+        self.connect_wifi()
+
+    def connect_wifi(self):
+        # Get wifi details and more from a settings.toml file
+        ssid = getenv("CIRCUITPY_WIFI_SSID")
+        password = getenv("CIRCUITPY_WIFI_PASSWORD")
 
         print("Connecting to AP...")
-        while not esp.is_connected:
+        while not self.esp.is_connected:
             try:
-                esp.connect_AP(ssid, password)
+                self.esp.connect_AP(ssid, password)
             except OSError as e:
                 print("could not connect to AP, retrying: ", e)
                 continue
-        print("Connected to", esp.ap_info.ssid, "\tRSSI:", esp.ap_info.rssi)
-        print("My IP address is", esp.ipv4_address)
+        print("Connected to", self.esp.ap_info.ssid, "\tRSSI:", self.esp.ap_info.rssi)
+        print("My IP address is", self.esp.ipv4_address)
 
     def init_graphics(self):
         print("debug init_graphics")
@@ -129,8 +178,8 @@ class WeatherClockScreenSaver(Group):
         weatherfont = bitmap_font.load_font("ssbundle_assets/fonts/meteocons-90.bdf")
         font48 = bitmap_font.load_font("ssbundle_assets/fonts/Baloo-num-48.bdf")
         font12 = bitmap_font.load_font("ssbundle_assets/fonts/Baloo-12.bdf")
-        self.temp_label = label.Label(font12, text='', color=TEXTCOLOR, x=10, y=20)
-        self.date_label = label.Label(font12, text='', color=TEXTCOLOR, x=10, y=180)
+        self.temp_label = label.Label(font24, text='', color=TEXTCOLOR, x=10, y=20)
+        self.date_label = label.Label(font24, text='', color=TEXTCOLOR, x=10, y=180)
         self.icon_label = label.Label(weatherfont, text='', color=ICONCOLOR, x=10, y=90)
         self.clockpos = [150,100]
         self.hour_label = label.Label(font48,text="00", color=TEXTCOLOR, x=self.clockpos[0]-90, y=self.clockpos[1])
@@ -138,22 +187,30 @@ class WeatherClockScreenSaver(Group):
         self.min_label = label.Label(font48,text="00", color=TEXTCOLOR, x=self.clockpos[0]+20, y=self.clockpos[1])
         self.ampm_label = label.Label(font12,text="", color=TEXTCOLOR, x=self.clockpos[0]+100, y=self.clockpos[1])
 
-        self.bmp, bg_palette = adafruit_imageload.load(
-                    "ssbundle_assets/weatherclock/blue_gradient.bmp",
+        self.bmp_day, bg_palette = adafruit_imageload.load(
+                    "ssbundle_assets/weatherclock/daytimebg.bmp",
                     bitmap=displayio.Bitmap,
                     palette=displayio.Palette
                     )
-        bg_tg = TileGrid(bitmap=self.bmp, pixel_shader=bg_palette)
-        display_group = Group(scale=1)
-        display_group.append(bg_tg)
-        display_group.append(self.temp_label)
-        display_group.append(self.date_label)
-        display_group.append(self.icon_label)
-        display_group.append(self.hour_label)
-        display_group.append(self.min_label)
-        display_group.append(self.sep_label)
-        display_group.append(self.ampm_label)
-        self.append(display_group)
+        self.day_tg = TileGrid(bitmap=self.bmp_day, pixel_shader=bg_palette)
+
+        self.bmp_night, bg_palette = adafruit_imageload.load(
+                    "ssbundle_assets/weatherclock/nighttimebg.bmp",
+                    bitmap=displayio.Bitmap,
+                    palette=displayio.Palette
+                    )
+        self.night_tg = TileGrid(bitmap=self.bmp_night, pixel_shader=bg_palette)
+
+        self.display_group = Group(scale=1)
+        self.display_group.append(self.day_tg)
+        self.display_group.append(self.temp_label)
+        self.display_group.append(self.date_label)
+        self.display_group.append(self.icon_label)
+        self.display_group.append(self.hour_label)
+        self.display_group.append(self.min_label)
+        self.display_group.append(self.sep_label)
+        self.display_group.append(self.ampm_label)
+        self.append(self.display_group)
         print(f"display size: {self.display_size}")
         print("debug end init_graphics")
         self.startcount = 0
@@ -187,24 +244,41 @@ class WeatherClockScreenSaver(Group):
         URL += f"&timezone={TMZ}"
         response = self.requests.get(URL)
         json = response.json()
-        print("response json:",json)
         tz_offset = json["utc_offset_seconds"] // 3600
-        print("tz_offset:",tz_offset)
         self.ntp = adafruit_ntp.NTP(self.pool, tz_offset=tz_offset, cache_seconds=3600)
         response.close()
         return json
 
     # Function to update display with weather data
     def update_weather(self,weather_data):
+        current = weather_data['current']['time']
+        sunrise = weather_data['daily']['sunrise'][0]
+        sunset = weather_data['daily']['sunset'][0]
+        print("sunrise, current, sunset:",sunrise, current, sunset)
+        if (current < sunrise or current > sunset) and self.daytime != False:
+            # switch to nighttime
+            self.daytime = False
+            self.display_group.pop(0)
+            self.display_group.insert(0,self.night_tg)
+            pass
+        elif (sunrise < current and current < sunset) and self.daytime != True:
+            # switch to daytime
+            self.daytime = True
+            self.display_group.pop(0)
+            self.display_group.insert(0,self.day_tg)
+            pass
         display = supervisor.runtime.display
         current_weather = weather_data['current']
         temperature = self.temperature_text(current_weather['temperature_2m'])  # Get the temperature
         weather_description = current_weather['weather_code']  # Weather code for description
-        print(f"debug1: {current_weather['weather_code']}")
-        print(f"debug2: {self.weather_codes[current_weather['weather_code']]}")
         self.temp_label.text = temperature
         self.temp_label.x = SCREENWIDTH - 10 - self.temp_label.width
-        self.icon_label.text = self.weather_codes[current_weather['weather_code']]
+        if self.daytime:
+            # use sun in icons
+            self.icon_label.text = self.day_fill_weather_codes[current_weather['weather_code']]
+        else:
+            # use moon in icons:
+            self.icon_label.text = self.night_fill_weather_codes[current_weather['weather_code']]
 
     def update_clock(self):
         months = {
@@ -251,7 +325,7 @@ class WeatherClockScreenSaver(Group):
             self.date_label.hidden = False
         except OSError as e:
             print(f"Network error: {e}, restarting connection")
-            self.init_wifi()
+            self.connect_wifi()
 
     def tick(self):
         now = time.monotonic()
