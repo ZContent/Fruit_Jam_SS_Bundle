@@ -19,8 +19,6 @@ from adafruit_display_text import label
 from adafruit_bitmap_font import bitmap_font
 import bitmaptools
 
-from os import getenv
-
 import adafruit_connection_manager
 import adafruit_requests
 import board
@@ -35,21 +33,11 @@ SCREENDEPTH = 8
 # Open-Meteo API URL for weather data
 API_URL = "https://api.open-meteo.com/v1/forecast"
 
-# User-defined settings
-
-# New York City
-#LATITUDE = "40.7128"
-#LONGITUDE = "-74.0060"
-#TMZ = "America/New_York"
-#METRIC = False
-#CITY = "New York, NY"
-
-# Annapolis
-LATITUDE = 38.9764
-LONGITUDE = -76.4896
+# Default city if not defined in settings.toml: New York City
+LATITUDE = "40.7128"
+LONGITUDE = "-74.0060"
 TMZ = "America/New_York"
 METRIC = False
-CITY = "Annapolis, MD"
 
 TEXTCOLOR = 0xCCCCFF
 ICONCOLOR = 0x7777FF
@@ -132,6 +120,26 @@ class WeatherClockScreenSaver(Group):
 
         self.init_wifi()
         self.init_graphics()
+        lat = os.getenv("LATITUDE")
+        print("lat:",lat)
+        lon = os.getenv("LONGITUDE")
+        print("lon:",lon)
+        tmz = os.getenv("TMZ")
+        metric = os.getenv("METRIC")
+        if lat != None and lon != None and tmz != None:
+            self.latitude = lat
+            self.longitude = lon
+            self.tmz = tmz
+            if metric == 1:
+                self.metric = True
+            else:
+                self.metric = False
+        else: # use default location
+            print("no location set, using default location")
+            self.latitude = LATITUDE
+            self.longitude = LONGITUDE
+            self.tmz = TMZ
+            self.metric = METRIC
 
     def init_wifi(self):
         print("init_wifi()")
@@ -159,8 +167,8 @@ class WeatherClockScreenSaver(Group):
 
     def connect_wifi(self):
         # Get wifi details and more from a settings.toml file
-        ssid = getenv("CIRCUITPY_WIFI_SSID")
-        password = getenv("CIRCUITPY_WIFI_PASSWORD")
+        ssid = os.getenv("CIRCUITPY_WIFI_SSID")
+        password = os.getenv("CIRCUITPY_WIFI_PASSWORD")
 
         print("Connecting to AP...")
         while not self.esp.is_connected:
@@ -216,7 +224,7 @@ class WeatherClockScreenSaver(Group):
         self.startcount = 0
 
     def temperature_text(self,tempC):
-        if METRIC:
+        if self.metric:
             return "{:3.0f}°".format(tempC)
         else:
             return "{:3.0f}°".format(32.0 + 1.8 * tempC)
@@ -225,8 +233,8 @@ class WeatherClockScreenSaver(Group):
     def get_weather(self):
         print("get_weather()")
         params = {
-            "latitude": LATITUDE,
-            "longitude": LONGITUDE,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
             "current": "weather_code,temperature_2m,precipitation",
             #"current_weather": True,
         }
@@ -241,7 +249,7 @@ class WeatherClockScreenSaver(Group):
         URL += ",sunrise,sunset,wind_speed_10m_max,wind_direction_10m_dominant"
         URL += "&current=weather_code,precipitation,temperature_2m"
         URL += "&timeformat=unixtime"
-        URL += f"&timezone={TMZ}"
+        URL += f"&timezone={self.tmz}"
         response = self.requests.get(URL)
         json = response.json()
         tz_offset = json["utc_offset_seconds"] // 3600
