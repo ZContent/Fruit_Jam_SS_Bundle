@@ -3,21 +3,17 @@ Weather Clock Screensaver for the Adafruit Fruit Jam
 and Fruit Jam OSDan Cogliano, https://DanTheGeek.com
 """
 
-from displayio import Group, TileGrid, Bitmap, Palette
+from displayio import Group, TileGrid
 import adafruit_imageload
 import adafruit_ntp
 
 import supervisor
 import displayio
 import os
-import random
 import time
-import terminalio
-import sys
 
 from adafruit_display_text import label
 from adafruit_bitmap_font import bitmap_font
-import bitmaptools
 
 import adafruit_connection_manager
 import adafruit_requests
@@ -37,14 +33,14 @@ API_URL = "https://api.open-meteo.com/v1/forecast"
 LATITUDE = "40.7128"
 LONGITUDE = "-74.0060"
 TMZ = "America/New_York"
-METRIC = False
+METRIC = 0
 
 TEXTCOLOR = 0xCCCCFF
 ICONCOLOR = 0x7777FF
 
 class WeatherClockScreenSaver(Group):
 
-    display_size = [SCREENWIDTH,SCREENHEIGHT]
+    display_size = [SCREENWIDTH, SCREENHEIGHT]
     screenwidth = SCREENWIDTH
     screenheight = SCREENHEIGHT
 
@@ -121,12 +117,12 @@ class WeatherClockScreenSaver(Group):
         self.init_wifi()
         self.init_graphics()
         lat = os.getenv("LATITUDE")
-        print("lat:",lat)
+        print("lat:", lat)
         lon = os.getenv("LONGITUDE")
-        print("lon:",lon)
+        print("lon:", lon)
         tmz = os.getenv("TMZ")
         metric = os.getenv("METRIC")
-        if lat != None and lon != None and tmz != None:
+        if lat is not None and lon is not None and tmz is not None:
             self.latitude = lat
             self.longitude = lon
             self.tmz = tmz
@@ -134,16 +130,17 @@ class WeatherClockScreenSaver(Group):
                 self.metric = True
             else:
                 self.metric = False
-        else: # use default location
+        else:  # use default location
             print("no location set, using default location")
             self.latitude = LATITUDE
             self.longitude = LONGITUDE
             self.tmz = TMZ
-            self.metric = METRIC
+            self.metric = False
+            if METRIC == 1:
+                self.metric = True
 
     def init_wifi(self):
         print("init_wifi()")
-
 
         # If you are using a board with pre-defined ESP32 Pins:
         esp32_cs = DigitalInOut(board.ESP_CS)
@@ -189,11 +186,11 @@ class WeatherClockScreenSaver(Group):
         self.temp_label = label.Label(font24, text='', color=TEXTCOLOR, x=10, y=20)
         self.date_label = label.Label(font24, text='', color=TEXTCOLOR, x=10, y=180)
         self.icon_label = label.Label(weatherfont, text='', color=ICONCOLOR, x=10, y=90)
-        self.clockpos = [150,100]
-        self.hour_label = label.Label(font48,text="00", color=TEXTCOLOR, x=self.clockpos[0]-90, y=self.clockpos[1])
-        self.sep_label = label.Label(font48,text=":", color=TEXTCOLOR, x=self.clockpos[0], y=self.clockpos[1])
-        self.min_label = label.Label(font48,text="00", color=TEXTCOLOR, x=self.clockpos[0]+20, y=self.clockpos[1])
-        self.ampm_label = label.Label(font12,text="", color=TEXTCOLOR, x=self.clockpos[0]+100, y=self.clockpos[1])
+        self.clockpos = [150, 100]
+        self.hour_label = label.Label(font48, text="00", color=TEXTCOLOR, x=self.clockpos[0]-90, y=self.clockpos[1])
+        self.sep_label = label.Label(font48, text=":", color=TEXTCOLOR, x=self.clockpos[0], y=self.clockpos[1])
+        self.min_label = label.Label(font48, text="00", color=TEXTCOLOR, x=self.clockpos[0]+20, y=self.clockpos[1])
+        self.ampm_label = label.Label(font12, text="", color=TEXTCOLOR, x=self.clockpos[0]+100, y=self.clockpos[1])
 
         self.bmp_day, bg_palette = adafruit_imageload.load(
                     "ssbundle_assets/weatherclock/daytimebg.bmp",
@@ -223,7 +220,7 @@ class WeatherClockScreenSaver(Group):
         print("debug end init_graphics")
         self.startcount = 0
 
-    def temperature_text(self,tempC):
+    def temperature_text(self, tempC):
         if self.metric:
             return "{:3.0f}°".format(tempC)
         else:
@@ -232,15 +229,9 @@ class WeatherClockScreenSaver(Group):
     # Function to fetch weather data
     def get_weather(self):
         print("get_weather()")
-        params = {
-            "latitude": self.latitude,
-            "longitude": self.longitude,
-            "current": "weather_code,temperature_2m,precipitation",
-            #"current_weather": True,
-        }
         # Initialize a requests session
-        #requests = adafruit_requests.Session(socketpool, ssl.create_default_context())
-        #response = requests.get(API_URL, params=params)
+
+
         print("debug 1")
         dir(self.requests)
         print("getting data...")
@@ -258,27 +249,24 @@ class WeatherClockScreenSaver(Group):
         return json
 
     # Function to update display with weather data
-    def update_weather(self,weather_data):
+    def update_weather(self, weather_data):
         current = weather_data['current']['time']
         sunrise = weather_data['daily']['sunrise'][0]
         sunset = weather_data['daily']['sunset'][0]
-        print("sunrise, current, sunset:",sunrise, current, sunset)
-        if (current < sunrise or current > sunset) and self.daytime != False:
+        print("sunrise, current, sunset:", sunrise, current, sunset)
+        if (current < sunrise or current > sunset) and self.daytime is not False:
             # switch to nighttime
             self.daytime = False
             self.display_group.pop(0)
-            self.display_group.insert(0,self.night_tg)
+            self.display_group.insert(0, self.night_tg)
             pass
         elif (sunrise < current and current < sunset) and self.daytime != True:
             # switch to daytime
             self.daytime = True
             self.display_group.pop(0)
-            self.display_group.insert(0,self.day_tg)
-            pass
-        display = supervisor.runtime.display
+            self.display_group.insert(0, self.day_tg)
         current_weather = weather_data['current']
         temperature = self.temperature_text(current_weather['temperature_2m'])  # Get the temperature
-        weather_description = current_weather['weather_code']  # Weather code for description
         self.temp_label.text = temperature
         self.temp_label.x = SCREENWIDTH - 10 - self.temp_label.width
         if self.daytime:
@@ -307,7 +295,6 @@ class WeatherClockScreenSaver(Group):
             print(self.ntp.datetime)
             hour = self.ntp.datetime.tm_hour
             min = self.ntp.datetime.tm_min
-            is_dst = self.ntp.datetime.tm_isdst
             mon = self.ntp.datetime.tm_mon
             day = self.ntp.datetime.tm_mday
             year = self.ntp.datetime.tm_year
@@ -315,7 +302,7 @@ class WeatherClockScreenSaver(Group):
                 is_pm = False
             else:
                 is_pm = True
-            hour = hour%12
+            hour = hour % 12
             if hour == 0:
                 hour = 12
             print(f"{hour}:{min}")
@@ -326,7 +313,7 @@ class WeatherClockScreenSaver(Group):
             self.hour_label.text = f"{hour:2d}"
             self.min_label.text = f"{min:02d}"
             self.hour_label.x = self.clockpos[0] - self.hour_label.width
-            #self.icon_label.x = SCREENWIDTH - 10 - self.icon_label.width
+            # self.icon_label.x = SCREENWIDTH - 10 - self.icon_label.width
             self.date_label.hidden = True
             self.date_label.text = f"{months[mon]} {day}, {year}"
             self.date_label.x = (SCREENWIDTH - self.date_label.width) // 2
@@ -340,8 +327,8 @@ class WeatherClockScreenSaver(Group):
 
         if now - self.last_move_time > self.move_cooldown:
             self.last_move_time = now
-            #print("***tick***")
-            if now - self.last_weather_check > 600 or self.last_weather_check == 0: # 10 minutes
+            # print("***tick***")
+            if now - self.last_weather_check > 600 or self.last_weather_check == 0:  # 10 minutes
                 self.last_weather_check = now
                 data = self.get_weather()
                 print(data)
