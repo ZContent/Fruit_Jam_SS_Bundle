@@ -1,14 +1,15 @@
 # The Fruit Jam Screensaver Bundle
 
 This repository is a collection of screensavers created for the Adafruit [Fruit Jam OS](https://learn.adafruit.com/fruit-jam-os), an operating system running on the Fruit Jam by [Adafruit](https://adafruit.com). It is a credit-card-sized, RP2350-powered mini computer designed for retro emulation and other fun projects.
-This bundle contains 4 screensavers.The screensavers included in this bundle are:
+
+This bundle contains 4 screensavers:
 
 * Weather Clock - A display containing the current date, time, temperature and weather icon
 * 15 Puzzle - Images are displayed as sliding tiles in a 4x4 grid
 * Maze - A screensaver that creates random mazes and then solves them.
 * Star Field - a screen of moving stars reminiscent of a famous 1960s SciFi TV show.
 
-The weather clock displays a simple view of the current weather and time. The background display also indicates whether it is currently daytime or nighttime (determined by sunrise and sunset times). In addition to the wifi settings, the location and timezone are configured in the settings.toml file. If not set, the weather and time for New York City are displayed. From the weather_clock_screensaver.py file, copy the LATITUDE, LONGITUDE, TMZ and METRIC lines to the settings.toml file on the CircuitPython drive and modify them for your location. Note: Latitude and longitude values can be defined either by direction (N,S,E,W) or by signed number. The program requires signed numbers. So, for latitudes with an "S" and/or longitudes with "W", use a minus sign with the value.Set METRIC to 1 for displaying metric values (Celcius temperatures) or set to 0 for non-metric values (Fahrenheit temperature).
+The weather clock displays a simple view of the current weather and time. The background display also indicates whether it is currently daytime or nighttime (determined by sunrise and sunset times). In addition to the wifi settings, the location and timezone are configured in the settings.toml file. If not set, the weather and time for New York City are displayed. From the weather_clock_screensaver.py file, copy the LATITUDE, LONGITUDE, TMZ and METRIC lines to the settings.toml file on the CircuitPython drive and modify them for your location. Note: Latitude and longitude values can be defined either by direction (N,S,E,W) or by signed number. The screensaver requires signed numbers. So, for latitudes with an "S" and/or longitudes with "W", use a minus sign with the value.Set METRIC to 1 for displaying metric values (Celcius temperatures) or set to 0 for non-metric values (Fahrenheit temperatures).
 
 For the 15 puzzle, a different image is chosen each time the screensaver is activated, then converted into tiles and slid within a 4x4 grid like the classic toy. With the default settings, the tiles slide randomly for about 1 minute before resolving to the initial starting position, and then started again. Several images are included, but you can add your own to the ssbundle_assets/15puzzle folder, which should be 320 pixels width and 240 pixels height and 256 colors.
 
